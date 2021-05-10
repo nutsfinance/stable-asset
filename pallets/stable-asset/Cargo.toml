@@ -1,0 +1,70 @@
+[package]
+authors = ["nuts.finance"]
+description = "Substrate-based runtime version of NUTS stable assets."
+edition = "2018"
+name = "nuts-finance-stable-asset"
+version = "0.1.0"
+license = "Apache-2.0"
+repository = "https://github.com/equilibrium-eosdt/equilibrium-curve-amm"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
+
+[dependencies.frame-support]
+default-features = false
+version = "3.0.0"
+git = "https://github.com/paritytech/substrate.git"
+tag = "v3.0.0"
+
+[dependencies.frame-system]
+default-features = false
+version = "3.0.0"
+git = "https://github.com/paritytech/substrate.git"
+tag = "v3.0.0"
+
+[dev-dependencies]
+serde = { version = "1.0.101" }
+
+[dev-dependencies.sp-core]
+default-features = false
+version = "3.0.0"
+git = "https://github.com/paritytech/substrate.git"
+tag = "v3.0.0"
+
+[dev-dependencies.sp-io]
+default-features = false
+version = "3.0.0"
+git = "https://github.com/paritytech/substrate.git"
+tag = "v3.0.0"
+
+[dependencies.sp-std]
+default-features = false
+version = "3.0.0"
+git = "https://github.com/paritytech/substrate.git"
+tag = "v3.0.0"
+
+[dependencies.sp-runtime]
+default-features = false
+version = "3.0.0"
+git = "https://github.com/paritytech/substrate.git"
+tag = "v3.0.0"
+
+[dev-dependencies.pallet-balances]
+default-features = false
+version = "3.0.0"
+git = "https://github.com/paritytech/substrate.git"
+tag = "v3.0.0"
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-support/std",
+	"frame-system/std",
+  "sp-std/std",
+	"sp-runtime/std",
+]

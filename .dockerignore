@@ -1,0 +1,6 @@
+target
+node/target
+runtime/target
+pallets/stable-asset/target
+client
+Dockerfile

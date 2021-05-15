@@ -1,0 +1,22 @@
+{
+  "TAssetBalance": "u128",
+  "Balance": "u128",
+  "Number": "u128",
+  "PoolId": "u32",
+  "PoolTokenIndex": "u32",
+  "AssetId": "u32",
+  "PoolInfo": {
+    "pool_asset": "AssetId",
+    "assets": "Vec<AssetId>",
+    "precisions": "Vec<Number>",
+    "mint_fee": "Number",
+    "swap_fee": "Number",
+    "redeem_fee": "Number",
+    "total_supply": "Balance",
+    "a": "Number",
+    "balances": "Vec<Balance>",
+    "fee_recipient": "AccountId",
+    "account_id": "AccountId",
+    "module_id": "AccountId"
+  }
+}

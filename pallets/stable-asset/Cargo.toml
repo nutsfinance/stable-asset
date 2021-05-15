@@ -2,10 +2,10 @@
 authors = ["nuts.finance"]
 description = "Substrate-based runtime version of NUTS stable assets."
 edition = "2018"
-name = "nuts-finance-stable-asset"
+name = "nutsfinance-stable-asset"
 version = "0.1.0"
 license = "Apache-2.0"
-repository = "https://github.com/equilibrium-eosdt/equilibrium-curve-amm"
+repository = "https://github.com/nutsfinance/stable-asset"
 readme = "README.md"
 
 [package.metadata.docs.rs]

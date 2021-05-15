@@ -38,11 +38,13 @@ pub struct PoolInfo<AssetId, Number, Balance, AccountId> {
     balances: Vec<Balance>,
     fee_recipient: AccountId,
     account_id: AccountId,
+    module_id: AccountId,
 }
 
 pub mod traits {
     use crate::{PoolId, PoolInfo, PoolTokenIndex};
     use frame_support::dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo};
+    use sp_std::prelude::*;
 
     pub trait Assets<AssetId, Balance, AccountId> {
         fn create_asset() -> Result<AssetId, DispatchError>;
@@ -186,7 +188,7 @@ pub mod pallet {
     #[pallet::metadata(T::AccountId = "AccountId")]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        CreatePool(T::AccountId, PoolId, T::AccountId),
+        CreatePool(T::AccountId, PoolId, T::AccountId, T::AccountId),
         Minted(
             T::AccountId,
             PoolId,
@@ -680,7 +682,8 @@ impl<T: Config> StableAsset for Pallet<T> {
                     a: intial_a,
                     balances: balances,
                     fee_recipient: fee_recipient,
-                    account_id: swap_id
+                    account_id: swap_id,
+                    module_id: T::ModuleId::get().into_account(),
                 });
 
                 Ok(())
@@ -693,7 +696,7 @@ impl<T: Config> StableAsset for Pallet<T> {
             Ok(pool_id)
         })?;
         let swap_id: T::AccountId = Self::convert_pool_id_to_account_id(T::ModuleId::get().into_account(), pool_id);
-        Self::deposit_event(Event::CreatePool(who.clone(), pool_id, swap_id));
+        Self::deposit_event(Event::CreatePool(who.clone(), pool_id, swap_id, T::ModuleId::get().into_account()));
 
         Ok(().into())
     }
@@ -734,7 +737,8 @@ impl<T: Config> StableAsset for Pallet<T> {
                         a: pool_info.a,
                         balances: balances,
                         fee_recipient: pool_info.fee_recipient,
-                        account_id: pool_info.account_id
+                        account_id: pool_info.account_id,
+                        module_id: pool_info.module_id
                     });
                     Ok(())
                 }
@@ -780,7 +784,8 @@ impl<T: Config> StableAsset for Pallet<T> {
                         a: pool_info.a,
                         balances: balances,
                         fee_recipient: pool_info.fee_recipient,
-                        account_id: pool_info.account_id
+                        account_id: pool_info.account_id,
+                        module_id: pool_info.module_id
                     });
                     Ok(())
                 }
@@ -824,7 +829,8 @@ impl<T: Config> StableAsset for Pallet<T> {
                         a: pool_info.a,
                         balances: balances,
                         fee_recipient: pool_info.fee_recipient,
-                        account_id: pool_info.account_id
+                        account_id: pool_info.account_id,
+                        module_id: pool_info.module_id
                     });
                     Ok(())
                 }
@@ -876,7 +882,8 @@ impl<T: Config> StableAsset for Pallet<T> {
                         a: pool_info.a,
                         balances: balances,
                         fee_recipient: pool_info.fee_recipient,
-                        account_id: pool_info.account_id
+                        account_id: pool_info.account_id,
+                        module_id: pool_info.module_id
                     });
                     Ok(())
                 }
@@ -921,7 +928,8 @@ impl<T: Config> StableAsset for Pallet<T> {
                         a: pool_info.a,
                         balances: balances,
                         fee_recipient: pool_info.fee_recipient,
-                        account_id: pool_info.account_id
+                        account_id: pool_info.account_id,
+                        module_id: pool_info.module_id
                     });
                     Ok(())
                 }
@@ -957,7 +965,8 @@ impl<T: Config> StableAsset for Pallet<T> {
                             a: pool_info.a,
                             balances: balances,
                             fee_recipient: pool_info.fee_recipient,
-                            account_id: pool_info.account_id
+                            account_id: pool_info.account_id,
+                            module_id: pool_info.module_id
                         });
                     }
                     Ok(())

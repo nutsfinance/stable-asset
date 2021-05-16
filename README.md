@@ -50,6 +50,8 @@ Now you can start the development chain:
 ```bash
 cargo run --bin node --dev
 ```
+### Use Docker
+You can build the docker image using `docker built -t stable-asset .`. Then run with `docker run -p 9944:9944 stable-asset`. 
 
 ## Connecting to the Node
 

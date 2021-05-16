@@ -35,8 +35,6 @@ To create code coverage report run:
 cargo tarpaulin -v
 ```
 
-You can see code coverage report [here](reports/tarpaulin-report.html).
-
 ## Running the Node
 
 First of all please ensure that your development chain's state is empty:
@@ -51,7 +49,7 @@ Now you can start the development chain:
 cargo run --bin node --dev
 ```
 ### Use Docker
-You can build the docker image using `docker built -t stable-asset .`. Then run with `docker run -p 9944:9944 stable-asset`. 
+You can build the docker image using `docker built -t stable-asset .`. Then run with `docker run -p 9944:9944 stable-asset`.
 
 ## Connecting to the Node
 

@@ -18,7 +18,7 @@ async function main() {
     const pooledAssets = [assetA, assetB];
     for (let asset of assetIds) {
         console.info(`Creating asset ${asset}...`)
-        await includedInBlock(alice, api.tx.assets.create(asset, alice.address, "1", "1"));
+        await includedInBlock(alice, api.tx.assets.create(asset, alice.address, "1"));
         console.info(`Asset ${asset} created.`);
     }
 

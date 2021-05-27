@@ -4,6 +4,7 @@ use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     parameter_types,
     traits::{Currency, OnUnbalanced},
+    PalletId
 };
 use frame_system as system;
 use sp_core::H256;
@@ -11,7 +12,6 @@ use sp_runtime::traits::Convert;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    ModuleId,
 };
 use sp_std::convert::TryFrom;
 
@@ -24,9 +24,9 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        Balances: pallet_balances::{Module, Call, Storage, Event<T>},
-        StableAsset: stable_asset::{Module, Call, Storage, Event<T>},
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
+        StableAsset: stable_asset::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -60,6 +60,7 @@ impl system::Config for Test {
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
     type SS58Prefix = SS58Prefix;
+    type OnSetCode = ();
 }
 
 parameter_types! {
@@ -77,7 +78,7 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-    pub const StableAssetModuleId: ModuleId = ModuleId(*b"nuts/sta");
+    pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
     pub Precision: u128 = 1000000000000000000u128;
     pub FeePrecision: u128 = 10000000000u128;
 }
@@ -105,7 +106,7 @@ impl Convert<u8, u128> for U128Convert {
 impl Convert<(u64, u32), u64> for U128Convert {
     fn convert(a: (u64, u32)) -> u64 {
         match a {
-            (module_id, pool_id) => module_id + pool_id as u64
+            (pallet_id, pool_id) => pallet_id + pool_id as u64
         }
     }
 }
@@ -128,8 +129,12 @@ thread_local! {
     static ASSETS: RefCell<Vec<Asset>> = RefCell::new(Vec::new());
 }
 
+pub trait CreateAssets<AssetId> {
+    fn create_asset() -> Result<AssetId, DispatchError>;
+}
+
 pub struct TestAssets;
-impl stable_asset::traits::Assets<AssetId, Balance, AccountId> for TestAssets {
+impl CreateAssets<AssetId> for TestAssets {
     fn create_asset() -> Result<AssetId, DispatchError> {
         ASSETS.with(|d| -> Result<AssetId, DispatchError> {
             let mut d = d.borrow_mut();
@@ -143,7 +148,8 @@ impl stable_asset::traits::Assets<AssetId, Balance, AccountId> for TestAssets {
             Ok(id)
         })
     }
-
+}
+impl stable_asset::traits::Assets<AssetId, Balance, AccountId> for TestAssets {
     fn mint(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
         ASSETS.with(|d| -> DispatchResult {
             let i =
@@ -243,7 +249,7 @@ impl stable_asset::Config for Test {
     type Currency = Balances;
     type Assets = TestAssets;
     type OnUnbalanced = EmptyUnbalanceHandler;
-    type ModuleId = StableAssetModuleId;
+    type PalletId = StableAssetPalletId;
 
     type Number = Number;
     type Precision = Precision;

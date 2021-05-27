@@ -34,7 +34,7 @@ use sp_runtime::MultiAddress;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
     construct_runtime,
-    dispatch::{DispatchResult},
+    dispatch::{DispatchResult, DispatchError},
     parameter_types,
     traits::{Currency, EnsureOrigin, KeyOwnerProofSystem, OnUnbalanced, Randomness},
     weights::{
@@ -44,6 +44,8 @@ pub use frame_support::{
     StorageValue,
     PalletId,
 };
+use frame_support::traits::fungibles::{Inspect, Mutate, Transfer,};
+use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence,};
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::CurrencyAdapter;
@@ -320,7 +322,7 @@ parameter_types! {
     pub FeePrecision: u128 = 10000000000u128;
 }
 
-type Number = u128;
+type AtLeast64BitUnsigned = u128;
 
 pub struct EmptyUnbalanceHandler;
 
@@ -329,22 +331,9 @@ impl OnUnbalanced<<pallet_balances::Pallet<Runtime> as Currency<AccountId>>::Neg
 {
 }
 
-pub struct U128Convert;
+pub struct AccountIdConvert;
 
-impl Convert<Balance, u128> for U128Convert {
-    fn convert(a: Balance) -> u128 {
-        a as u128
-    }
-}
-
-impl Convert<u8, u128> for U128Convert {
-    fn convert(a: u8) -> u128 {
-        a as u128
-    }
-}
-
-
-impl Convert<(AccountId, u32), AccountId> for U128Convert {
+impl Convert<(AccountId, u32), AccountId> for AccountIdConvert {
     fn convert(a: (AccountId, u32)) -> AccountId {
         match a {
             (pallet_id, pool_id) => {
@@ -364,12 +353,6 @@ impl Convert<(AccountId, u32), AccountId> for U128Convert {
     }
 }
 
-impl nutsfinance_stable_asset::traits::CheckedConvert<usize, u128> for U128Convert {
-    fn convert(a: usize) -> Option<u128> {
-        Some(a as u128)
-    }
-}
-
 pub struct FrameAssets;
 
 /// NOTE: Please do not use this implementation in production.
@@ -378,8 +361,8 @@ pub struct FrameAssets;
 /// will generate asset id for the new asset on it's own. But `pallet-assets` in contrast
 /// expects that asset id will be provided by the caller. The only thing we can do here
 /// is to guess asset id and hope that it is not in use.
-impl nutsfinance_stable_asset::traits::Assets<AssetId, Balance, AccountId> for FrameAssets {
-    fn mint(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
+impl Mutate<AccountId> for FrameAssets {
+    fn mint_into(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
         let pallet_id = StableAssetPalletId::get();
         let account_id: AccountId = pallet_id.into_account();
         let raw_origin = RawOrigin::Signed(account_id.clone());
@@ -393,7 +376,7 @@ impl nutsfinance_stable_asset::traits::Assets<AssetId, Balance, AccountId> for F
         Ok(())
     }
 
-    fn burn(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
+    fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance) -> Result<Balance, DispatchError> {
         let pallet_id = StableAssetPalletId::get();
         let account_id: AccountId = pallet_id.into_account();
         let raw_origin = RawOrigin::Signed(account_id.clone());
@@ -404,15 +387,58 @@ impl nutsfinance_stable_asset::traits::Assets<AssetId, Balance, AccountId> for F
         let call = Call::Assets(AssetsCall::burn(asset, multi_address, amount));
         call.dispatch(origin.clone()).map_err(|x| x.error)?;
 
-        Ok(())
+        Ok(amount)
+    }
+}
+
+impl Inspect<AccountId> for FrameAssets {
+    type AssetId = AssetId;
+    type Balance = Balance;
+    fn balance(asset: AssetId, who: &AccountId) -> Balance {
+        Assets::balance(asset, who.clone())
     }
 
+    fn total_issuance(_asset: AssetId) -> Balance {
+		todo!()
+	}
+
+	fn minimum_balance(_asset: AssetId) -> Balance {
+		todo!()
+    }
+
+	fn reducible_balance(
+		_asset: AssetId,
+		_who: &AccountId,
+		_keep_alive: bool,
+	) -> Balance {
+		todo!()
+	}
+
+	fn can_deposit(
+		_asset: Self::AssetId,
+		_who: &AccountId,
+		_amount: Balance,
+	) -> DepositConsequence {
+		todo!()
+	}
+
+	fn can_withdraw(
+		_asset: AssetId,
+		_who: &AccountId,
+		_amount: Balance,
+	) -> WithdrawConsequence<Balance> {
+		todo!()
+	}
+}
+
+impl Transfer<AccountId> for FrameAssets {
     fn transfer(
         asset: AssetId,
         source: &AccountId,
         dest: &AccountId,
         amount: Balance,
-    ) -> DispatchResult {
+        _keep_alive: bool,
+    ) -> Result<Balance, DispatchError> {
         let raw_origin = RawOrigin::Signed(source.clone());
         let origin: Origin = raw_origin.into();
 
@@ -421,15 +447,7 @@ impl nutsfinance_stable_asset::traits::Assets<AssetId, Balance, AccountId> for F
         let call = Call::Assets(AssetsCall::transfer(asset, multi_address, amount));
         call.dispatch(origin.clone()).map_err(|x| x.error)?;
 
-        Ok(())
-    }
-
-    fn balance(asset: AssetId, who: &AccountId) -> Balance {
-        Assets::balance(asset, who.clone())
-    }
-
-    fn total_issuance(asset: AssetId) -> Balance {
-        Assets::total_supply(asset)
+        Ok(amount)
     }
 }
 
@@ -443,10 +461,10 @@ impl nutsfinance_stable_asset::Config for Runtime {
     type OnUnbalanced = EmptyUnbalanceHandler;
     type PalletId = StableAssetPalletId;
 
-    type Number = Number;
+    type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
     type Precision = Precision;
     type FeePrecision = FeePrecision;
-    type Convert = U128Convert;
+    type AccountIdConvert = AccountIdConvert;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

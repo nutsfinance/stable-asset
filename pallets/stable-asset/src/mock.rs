@@ -1,5 +1,4 @@
 use crate as stable_asset;
-use crate::traits::CheckedConvert;
 use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     parameter_types,
@@ -14,6 +13,8 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
 };
 use sp_std::convert::TryFrom;
+use frame_support::traits::fungibles::{Inspect, Mutate, Transfer,};
+use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence,};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -84,36 +85,17 @@ parameter_types! {
 }
 
 pub type Balance = u128;
-type Number = u128;
+type AtLeast64BitUnsigned = u128;
 
 pub type AssetId = i64;
 
-pub struct U128Convert;
+pub struct AccountIdConvert;
 
-impl Convert<Balance, u128> for U128Convert {
-    fn convert(a: Balance) -> u128 {
-        a as u128
-    }
-}
-
-impl Convert<u8, u128> for U128Convert {
-    fn convert(a: u8) -> u128 {
-        a as u128
-    }
-}
-
-
-impl Convert<(u64, u32), u64> for U128Convert {
+impl Convert<(u64, u32), u64> for AccountIdConvert {
     fn convert(a: (u64, u32)) -> u64 {
         match a {
             (pallet_id, pool_id) => pallet_id + pool_id as u64
         }
-    }
-}
-
-impl CheckedConvert<usize, u128> for U128Convert {
-    fn convert(a: usize) -> Option<u128> {
-        Some(a as u128)
     }
 }
 
@@ -149,8 +131,9 @@ impl CreateAssets<AssetId> for TestAssets {
         })
     }
 }
-impl stable_asset::traits::Assets<AssetId, Balance, AccountId> for TestAssets {
-    fn mint(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
+
+impl Mutate<AccountId> for TestAssets {
+    fn mint_into(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
         ASSETS.with(|d| -> DispatchResult {
             let i =
                 usize::try_from(asset).map_err(|_| DispatchError::Other(&"Index out of range"))?;
@@ -176,7 +159,7 @@ impl stable_asset::traits::Assets<AssetId, Balance, AccountId> for TestAssets {
         })
     }
 
-    fn burn(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
+    fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance) -> Result<Balance, DispatchError> {
         ASSETS.with(|d| -> DispatchResult {
             let i =
                 usize::try_from(asset).map_err(|_| DispatchError::Other(&"Index out of range"))?;
@@ -200,20 +183,14 @@ impl stable_asset::traits::Assets<AssetId, Balance, AccountId> for TestAssets {
                 .ok_or(DispatchError::Other(&"Overflow"))?;
 
             Ok(())
-        })
+        })?;
+        Ok(amount)
     }
+}
 
-    fn transfer(
-        asset: AssetId,
-        source: &AccountId,
-        dest: &AccountId,
-        amount: Balance,
-    ) -> DispatchResult {
-        Self::burn(asset, source, amount)?;
-        Self::mint(asset, dest, amount)?;
-        Ok(())
-    }
-
+impl Inspect<AccountId> for TestAssets {
+    type AssetId = AssetId;
+    type Balance = Balance;
     fn balance(asset: AssetId, who: &AccountId) -> Balance {
         ASSETS
             .with(|d| -> Option<Balance> {
@@ -225,14 +202,50 @@ impl stable_asset::traits::Assets<AssetId, Balance, AccountId> for TestAssets {
             .unwrap_or(0)
     }
 
-    fn total_issuance(asset: AssetId) -> Balance {
-        ASSETS
-            .with(|d| -> Option<Balance> {
-                let i = usize::try_from(asset).ok()?;
-                let d = d.borrow();
-                d.get(i).map(|a| a.total)
-            })
-            .unwrap_or(0)
+    fn total_issuance(_asset: AssetId) -> Balance {
+		todo!()
+	}
+
+	fn minimum_balance(_asset: AssetId) -> Balance {
+		todo!()
+    }
+
+	fn reducible_balance(
+		_asset: AssetId,
+		_who: &AccountId,
+		_keep_alive: bool,
+	) -> Balance {
+		todo!()
+	}
+
+	fn can_deposit(
+		_asset: Self::AssetId,
+		_who: &AccountId,
+		_amount: Balance,
+	) -> DepositConsequence {
+		todo!()
+	}
+
+	fn can_withdraw(
+		_asset: AssetId,
+		_who: &AccountId,
+		_amount: Balance,
+	) -> WithdrawConsequence<Balance> {
+		todo!()
+	}
+}
+
+impl Transfer<AccountId> for TestAssets {
+    fn transfer(
+        asset: AssetId,
+        source: &AccountId,
+        dest: &AccountId,
+        amount: Balance,
+        _keep_alive: bool,
+    ) -> Result<Balance, DispatchError> {
+        Self::burn_from(asset, source, amount)?;
+        Self::mint_into(asset, dest, amount)?;
+        Ok(amount)
     }
 }
 
@@ -251,10 +264,10 @@ impl stable_asset::Config for Test {
     type OnUnbalanced = EmptyUnbalanceHandler;
     type PalletId = StableAssetPalletId;
 
-    type Number = Number;
+    type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
     type Precision = Precision;
     type FeePrecision = FeePrecision;
-    type Convert = U128Convert;
+    type AccountIdConvert = AccountIdConvert;
 }
 
 // Build genesis storage according to the mock runtime.

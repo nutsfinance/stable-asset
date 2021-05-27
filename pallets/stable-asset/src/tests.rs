@@ -1,8 +1,9 @@
 use crate::{mock::*, Error, PoolInfo};
-use crate::traits::Assets;
-use frame_support::assert_err_ignore_postinfo;
 use frame_support::assert_ok;
+use frame_support::assert_noop;
 use frame_support::dispatch::DispatchError;
+use frame_support::traits::fungibles::{Inspect, Mutate,};
+
 
 fn last_event() -> Event {
     frame_system::pallet::Pallet::<Test>::events()
@@ -16,8 +17,8 @@ fn create_pool() -> (i64, i64, i64, u64) {
     let coin1 = TestAssets::create_asset().unwrap();
     let pool_asset = TestAssets::create_asset().unwrap();
     let amount: Balance = 100_000_000;
-    assert_ok!(TestAssets::mint(coin0, &1, amount));
-    assert_ok!(TestAssets::mint(coin1, &1, amount));
+    assert_ok!(TestAssets::mint_into(coin0, &1, amount));
+    assert_ok!(TestAssets::mint_into(coin1, &1, amount));
     assert_ok!(StableAsset::create_pool(
         Origin::signed(1),
         pool_asset,
@@ -70,7 +71,7 @@ fn create_pool_successful() {
 #[test]
 fn create_pool_precisions_mismatch() {
     new_test_ext().execute_with(|| {
-        assert_err_ignore_postinfo!(StableAsset::create_pool(
+        assert_noop!(StableAsset::create_pool(
             Origin::signed(1),
             1,
             vec![1,2],
@@ -87,7 +88,7 @@ fn create_pool_precisions_mismatch() {
 #[test]
 fn create_pool_asset_not_enough() {
     new_test_ext().execute_with(|| {
-        assert_err_ignore_postinfo!(StableAsset::create_pool(
+        assert_noop!(StableAsset::create_pool(
             Origin::signed(1),
             1,
             vec![1],
@@ -207,7 +208,7 @@ fn mint_failed_no_pool() {
         match pool_tokens {
             (_coin0, _coin1, _pool_asset, _swap_id) => {
                 let amounts = vec![10000000u128, 20000000u128];
-                assert_err_ignore_postinfo!(StableAsset::mint(
+                assert_noop!(StableAsset::mint(
                     Origin::signed(1),
                     3,
                     amounts,
@@ -226,7 +227,7 @@ fn mint_failed_too_many_amounts() {
         match pool_tokens {
             (_coin0, _coin1, _pool_asset, _swap_id) => {
                 let amounts = vec![10000000u128, 20000000u128, 20000000u128];
-                assert_err_ignore_postinfo!(StableAsset::mint(
+                assert_noop!(StableAsset::mint(
                     Origin::signed(1),
                     0,
                     amounts,
@@ -245,7 +246,7 @@ fn mint_failed_zero_amount() {
         match pool_tokens {
             (_coin0, _coin1, _pool_asset, _swap_id) => {
                 let amounts = vec![0u128, 20000000u128];
-                assert_err_ignore_postinfo!(StableAsset::mint(
+                assert_noop!(StableAsset::mint(
                     Origin::signed(1),
                     0,
                     amounts,
@@ -264,7 +265,7 @@ fn mint_failed_under_min() {
         match pool_tokens {
             (_coin0, _coin1, _pool_asset, _swap_id) => {
                 let amounts = vec![10000000u128, 20000000u128];
-                assert_err_ignore_postinfo!(StableAsset::mint(
+                assert_noop!(StableAsset::mint(
                     Origin::signed(1),
                     0,
                     amounts,
@@ -283,7 +284,7 @@ fn mint_failed_overflow() {
         match pool_tokens {
             (_coin0, _coin1, _pool_asset, _swap_id) => {
                 let amounts = vec![10000000000u128, 20000000000u128];
-                assert_err_ignore_postinfo!(StableAsset::mint(
+                assert_noop!(StableAsset::mint(
                     Origin::signed(1),
                     0,
                     amounts,
@@ -370,7 +371,7 @@ fn swap_failed_same_token() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::swap(
+                assert_noop!(StableAsset::swap(
                     Origin::signed(1),
                     0,
                     1,
@@ -397,7 +398,7 @@ fn swap_failed_no_pool() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::swap(
+                assert_noop!(StableAsset::swap(
                     Origin::signed(1),
                     3,
                     0,
@@ -424,7 +425,7 @@ fn swap_failed_invalid_first_token() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::swap(
+                assert_noop!(StableAsset::swap(
                     Origin::signed(1),
                     0,
                     2,
@@ -451,7 +452,7 @@ fn swap_failed_invalid_second_token() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::swap(
+                assert_noop!(StableAsset::swap(
                     Origin::signed(1),
                     0,
                     0,
@@ -478,7 +479,7 @@ fn swap_failed_invalid_amount() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::swap(
+                assert_noop!(StableAsset::swap(
                     Origin::signed(1),
                     0,
                     0,
@@ -505,7 +506,7 @@ fn swap_failed_under_min() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::swap(
+                assert_noop!(StableAsset::swap(
                     Origin::signed(1),
                     0,
                     0,
@@ -532,7 +533,7 @@ fn swap_failed_under_overflow() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::swap(
+                assert_noop!(StableAsset::swap(
                     Origin::signed(1),
                     0,
                     0,
@@ -621,7 +622,7 @@ fn redeem_proportion_failed_zero_amount() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_proportion(
+                assert_noop!(StableAsset::redeem_proportion(
                     Origin::signed(1),
                     0,
                     0u128,
@@ -646,7 +647,7 @@ fn redeem_proportion_failed_limits_mismatch() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_proportion(
+                assert_noop!(StableAsset::redeem_proportion(
                     Origin::signed(1),
                     0,
                     100000000000000000u128,
@@ -671,7 +672,7 @@ fn redeem_proportion_failed_overflow() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_proportion(
+                assert_noop!(StableAsset::redeem_proportion(
                     Origin::signed(1),
                     0,
                     10000000000000000000u128,
@@ -696,7 +697,7 @@ fn redeem_proportion_failed_limits_breached() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_proportion(
+                assert_noop!(StableAsset::redeem_proportion(
                     Origin::signed(1),
                     0,
                     100000000000000000u128,
@@ -721,7 +722,7 @@ fn redeem_proportion_failed_no_pool() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_proportion(
+                assert_noop!(StableAsset::redeem_proportion(
                     Origin::signed(1),
                     3,
                     100000000000000000u128,
@@ -809,7 +810,7 @@ fn redeem_single_failed_zero_amount() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_single(
+                assert_noop!(StableAsset::redeem_single(
                     Origin::signed(1),
                     0,
                     0u128,
@@ -835,7 +836,7 @@ fn redeem_single_failed_overflow() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_single(
+                assert_noop!(StableAsset::redeem_single(
                     Origin::signed(1),
                     0,
                     1000000000000000000u128,
@@ -861,7 +862,7 @@ fn redeem_single_failed_under_min() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_single(
+                assert_noop!(StableAsset::redeem_single(
                     Origin::signed(1),
                     0,
                     100000000000000000u128,
@@ -887,7 +888,7 @@ fn redeem_single_failed_invalid_token() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_single(
+                assert_noop!(StableAsset::redeem_single(
                     Origin::signed(1),
                     0,
                     100000000000000000u128,
@@ -913,7 +914,7 @@ fn redeem_single_failed_no_pool() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_single(
+                assert_noop!(StableAsset::redeem_single(
                     Origin::signed(1),
                     3,
                     100000000000000000u128,
@@ -1001,7 +1002,7 @@ fn redeem_multi_failed_not_enough_assets() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_multi(
+                assert_noop!(StableAsset::redeem_multi(
                     Origin::signed(1),
                     0,
                     vec![1000000000u128, 1000000000u128],
@@ -1026,7 +1027,7 @@ fn redeem_multi_failed_over_max() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_multi(
+                assert_noop!(StableAsset::redeem_multi(
                     Origin::signed(1),
                     0,
                     vec![5000000u128, 5000000u128],
@@ -1051,7 +1052,7 @@ fn redeem_multi_failed_no_pool() {
                     amounts,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::redeem_multi(
+                assert_noop!(StableAsset::redeem_multi(
                     Origin::signed(1),
                     1,
                     vec![5000000u128, 5000000u128],
@@ -1150,7 +1151,7 @@ fn collect_fee_failed_no_pool() {
                     5000000u128,
                     0
                 ));
-                assert_err_ignore_postinfo!(StableAsset::collect_fee(
+                assert_noop!(StableAsset::collect_fee(
                     Origin::signed(1),
                     2
                 ), Error::<Test>::PoolNotFound);

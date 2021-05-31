@@ -6,15 +6,21 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_system::RawOrigin;
+use pallet_assets::Call as AssetsCall;
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_io;
+use sp_runtime::traits::AccountIdConversion;
 use sp_runtime::traits::Convert;
+use sp_runtime::traits::Dispatchable;
 use sp_runtime::traits::{
     AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify,
 };
+use sp_runtime::MultiAddress;
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     transaction_validity::{TransactionSource, TransactionValidity},
@@ -24,28 +30,21 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-use sp_io;
-use frame_system::RawOrigin;
-use pallet_assets::Call as AssetsCall;
-use sp_runtime::traits::AccountIdConversion;
-use sp_runtime::traits::Dispatchable;
-use sp_runtime::MultiAddress;
 
 // A few exports that help ease life for downstream crates.
+use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
+use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence};
 pub use frame_support::{
     construct_runtime,
-    dispatch::{DispatchResult, DispatchError},
+    dispatch::{DispatchError, DispatchResult},
     parameter_types,
     traits::{Currency, EnsureOrigin, KeyOwnerProofSystem, OnUnbalanced, Randomness},
     weights::{
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
         IdentityFee, Weight,
     },
-    StorageValue,
-    PalletId,
+    PalletId, StorageValue,
 };
-use frame_support::traits::fungibles::{Inspect, Mutate, Transfer,};
-use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence,};
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::CurrencyAdapter;
@@ -376,7 +375,11 @@ impl Mutate<AccountId> for FrameAssets {
         Ok(())
     }
 
-    fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance) -> Result<Balance, DispatchError> {
+    fn burn_from(
+        asset: AssetId,
+        dest: &AccountId,
+        amount: Balance,
+    ) -> Result<Balance, DispatchError> {
         let pallet_id = StableAssetPalletId::get();
         let account_id: AccountId = pallet_id.into_account();
         let raw_origin = RawOrigin::Signed(account_id.clone());
@@ -399,36 +402,32 @@ impl Inspect<AccountId> for FrameAssets {
     }
 
     fn total_issuance(_asset: AssetId) -> Balance {
-		todo!()
-	}
-
-	fn minimum_balance(_asset: AssetId) -> Balance {
-		todo!()
+        todo!()
     }
 
-	fn reducible_balance(
-		_asset: AssetId,
-		_who: &AccountId,
-		_keep_alive: bool,
-	) -> Balance {
-		todo!()
-	}
+    fn minimum_balance(_asset: AssetId) -> Balance {
+        todo!()
+    }
 
-	fn can_deposit(
-		_asset: Self::AssetId,
-		_who: &AccountId,
-		_amount: Balance,
-	) -> DepositConsequence {
-		todo!()
-	}
+    fn reducible_balance(_asset: AssetId, _who: &AccountId, _keep_alive: bool) -> Balance {
+        todo!()
+    }
 
-	fn can_withdraw(
-		_asset: AssetId,
-		_who: &AccountId,
-		_amount: Balance,
-	) -> WithdrawConsequence<Balance> {
-		todo!()
-	}
+    fn can_deposit(
+        _asset: Self::AssetId,
+        _who: &AccountId,
+        _amount: Balance,
+    ) -> DepositConsequence {
+        todo!()
+    }
+
+    fn can_withdraw(
+        _asset: AssetId,
+        _who: &AccountId,
+        _amount: Balance,
+    ) -> WithdrawConsequence<Balance> {
+        todo!()
+    }
 }
 
 impl Transfer<AccountId> for FrameAssets {

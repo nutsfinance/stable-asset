@@ -1,9 +1,11 @@
 use crate as stable_asset;
+use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
+use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence};
 use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     parameter_types,
     traits::{Currency, OnUnbalanced},
-    PalletId
+    PalletId,
 };
 use frame_system as system;
 use sp_core::H256;
@@ -13,8 +15,6 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
 };
 use sp_std::convert::TryFrom;
-use frame_support::traits::fungibles::{Inspect, Mutate, Transfer,};
-use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence,};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -94,7 +94,7 @@ pub struct AccountIdConvert;
 impl Convert<(u64, u32), u64> for AccountIdConvert {
     fn convert(a: (u64, u32)) -> u64 {
         match a {
-            (pallet_id, pool_id) => pallet_id + pool_id as u64
+            (pallet_id, pool_id) => pallet_id + pool_id as u64,
         }
     }
 }
@@ -159,7 +159,11 @@ impl Mutate<AccountId> for TestAssets {
         })
     }
 
-    fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance) -> Result<Balance, DispatchError> {
+    fn burn_from(
+        asset: AssetId,
+        dest: &AccountId,
+        amount: Balance,
+    ) -> Result<Balance, DispatchError> {
         ASSETS.with(|d| -> DispatchResult {
             let i =
                 usize::try_from(asset).map_err(|_| DispatchError::Other(&"Index out of range"))?;
@@ -203,36 +207,32 @@ impl Inspect<AccountId> for TestAssets {
     }
 
     fn total_issuance(_asset: AssetId) -> Balance {
-		todo!()
-	}
-
-	fn minimum_balance(_asset: AssetId) -> Balance {
-		todo!()
+        todo!()
     }
 
-	fn reducible_balance(
-		_asset: AssetId,
-		_who: &AccountId,
-		_keep_alive: bool,
-	) -> Balance {
-		todo!()
-	}
+    fn minimum_balance(_asset: AssetId) -> Balance {
+        todo!()
+    }
 
-	fn can_deposit(
-		_asset: Self::AssetId,
-		_who: &AccountId,
-		_amount: Balance,
-	) -> DepositConsequence {
-		todo!()
-	}
+    fn reducible_balance(_asset: AssetId, _who: &AccountId, _keep_alive: bool) -> Balance {
+        todo!()
+    }
 
-	fn can_withdraw(
-		_asset: AssetId,
-		_who: &AccountId,
-		_amount: Balance,
-	) -> WithdrawConsequence<Balance> {
-		todo!()
-	}
+    fn can_deposit(
+        _asset: Self::AssetId,
+        _who: &AccountId,
+        _amount: Balance,
+    ) -> DepositConsequence {
+        todo!()
+    }
+
+    fn can_withdraw(
+        _asset: AssetId,
+        _who: &AccountId,
+        _amount: Balance,
+    ) -> WithdrawConsequence<Balance> {
+        todo!()
+    }
 }
 
 impl Transfer<AccountId> for TestAssets {

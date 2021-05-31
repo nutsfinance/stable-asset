@@ -13,9 +13,9 @@ fn last_event() -> Event {
 }
 
 fn create_pool() -> (i64, i64, i64, u64) {
-    let coin0 = TestAssets::create_asset().unwrap();
-    let coin1 = TestAssets::create_asset().unwrap();
-    let pool_asset = TestAssets::create_asset().unwrap();
+    let coin0 = TestAssets::create_asset().expect("asset should be created");
+    let coin1 = TestAssets::create_asset().expect("asset should be created");
+    let pool_asset = TestAssets::create_asset().expect("asset should be created");
     let amount: Balance = 100_000_000;
     assert_ok!(TestAssets::mint_into(coin0, &1, amount));
     assert_ok!(TestAssets::mint_into(coin1, &1, amount));

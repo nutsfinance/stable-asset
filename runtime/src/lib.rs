@@ -457,9 +457,7 @@ impl nutsfinance_stable_asset::Config for Runtime {
     type Event = Event;
     type AssetId = AssetId;
     type Balance = Balance;
-    type Currency = pallet_balances::Pallet<Runtime>;
     type Assets = FrameAssets;
-    type OnUnbalanced = EmptyUnbalanceHandler;
     type PalletId = StableAssetPalletId;
 
     type AtLeast64BitUnsigned = AtLeast64BitUnsigned;

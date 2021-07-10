@@ -261,9 +261,7 @@ impl stable_asset::Config for Test {
     type Event = Event;
     type AssetId = i64;
     type Balance = Balance;
-    type Currency = Balances;
     type Assets = TestAssets;
-    type OnUnbalanced = EmptyUnbalanceHandler;
     type PalletId = StableAssetPalletId;
 
     type AtLeast64BitUnsigned = AtLeast64BitUnsigned;

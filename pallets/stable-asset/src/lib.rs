@@ -125,7 +125,6 @@ pub mod pallet {
     use frame_support::{
         dispatch::{Codec, DispatchResultWithPostInfo},
         pallet_prelude::*,
-        traits::{Currency, OnUnbalanced},
         transactional, PalletId,
     };
     use frame_system::pallet_prelude::*;
@@ -142,10 +141,6 @@ pub mod pallet {
         type Assets: fungibles::Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::Balance>
             + fungibles::Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::Balance>
             + fungibles::Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::Balance>;
-        type Currency: Currency<Self::AccountId, Balance = Self::Balance>;
-        type OnUnbalanced: OnUnbalanced<
-            <Self::Currency as Currency<Self::AccountId>>::NegativeImbalance,
-        >;
         type AtLeast64BitUnsigned: Parameter
             + CheckedAdd
             + CheckedSub

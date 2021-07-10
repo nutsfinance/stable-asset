@@ -33,6 +33,61 @@ Stable Swap component is built with Curve's StableSwap algorithm with enhancemen
 * Its value composition is calculated based on the instrinic value of the Stable Assets instead of value of the underlying assets;
 * It has more robust and flexible basket management functionalities which are not required in DEX;
 
+### Error Types
+```
+pub enum Error<T> {
+      InconsistentStorage, -- when unexpected storage error happens
+      ArgumentsMismatch, -- when assets don't match the underlying pool
+      ArgumentsError, -- call function argument fails validation
+      PoolNotFound, -- pool not yet exist
+      Math, -- arithmetic errors
+      MintUnderMin, -- mint fails when it is below provided min
+      SwapUnderMin, -- swap fails when it is below provided min
+      RedeemUnderMin, -- redeem fails when it is below provided min
+      RedeemOverMax, -- redeem fails when it is above provided max
+  }
+```
+
+### Events
+```
+pub enum Event<T: Config> {
+      CreatePool(
+          T::AccountId, // creator account id
+          PoolId,       // created pool id
+          T::AccountId, // swap id
+          T::AccountId,
+      ), // pallet id
+      Minted(
+          T::AccountId,    // minter account id
+          PoolId,          // minted pool id
+          T::Balance,      // minted amount
+          Vec<T::Balance>, // mint input asset amounts
+          T::Balance,      // fee amount
+      ),
+      TokenSwapped(
+          T::AccountId, // swapper account id
+          PoolId,       // swapped pool id
+          T::AssetId,   // input token asset id
+          T::AssetId,   // output token asset id
+          T::Balance,   // input token amount
+          T::Balance,   // output token amount
+      ),
+      Redeemed(
+          T::AccountId,    // redeemer account id
+          PoolId,          // redeemed pool id
+          T::Balance,      // redeem amount
+          Vec<T::Balance>, // amount of underlying assets redeemed
+          T::Balance,      // fee amount
+      ),
+      FeeCollected(
+          T::AccountId, // collector account id
+          PoolId,       // fee collected pool id
+          T::AccountId, // fee recipient account id
+          T::Balance,   // collected fee amount
+      ),
+  }
+```
+
 ## License
 
 NUTS Stable Asset is Apache 2.0 licensed.

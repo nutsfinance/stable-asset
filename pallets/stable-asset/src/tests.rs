@@ -177,7 +177,7 @@ fn mint_successful_different_amounts() {
                 assert_eq!(TestAssets::balance(coin1, &swap_id), 20000000u128);
                 assert_eq!(TestAssets::balance(pool_asset, &1), 299606896309149793u128);
                 assert_eq!(TestAssets::balance(pool_asset, &2), 299906803112262u128);
-                if let Event::stable_asset(crate::pallet::Event::Minted(
+                if let Event::StableAsset(crate::pallet::Event::Minted(
                     _,
                     _,
                     mint_amount,
@@ -318,7 +318,7 @@ fn swap_successful() {
                 assert_eq!(TestAssets::balance(coin1, &1), 84999301u128);
                 assert_eq!(TestAssets::balance(coin0, &swap_id), 15000000u128);
                 assert_eq!(TestAssets::balance(coin1, &swap_id), 15000699u128);
-                if let Event::stable_asset(crate::pallet::Event::TokenSwapped(_, _, _, _, dx, dy)) =
+                if let Event::StableAsset(crate::pallet::Event::TokenSwapped(_, _, _, _, dx, dy)) =
                     last_event()
                 {
                     assert_eq!(dx, 5000000u128);
@@ -502,7 +502,7 @@ fn redeem_proportion_successful() {
                 assert_eq!(TestAssets::balance(coin1, &swap_id), 13364606u128);
                 assert_eq!(TestAssets::balance(pool_asset, &1), 199606896309149793u128);
                 assert_eq!(TestAssets::balance(pool_asset, &2), 799906803112262u128);
-                if let Event::stable_asset(crate::pallet::Event::Redeemed(
+                if let Event::StableAsset(crate::pallet::Event::Redeemed(
                     _,
                     _,
                     amount,
@@ -670,7 +670,7 @@ fn redeem_single_successful() {
                 assert_eq!(TestAssets::balance(coin1, &swap_id), 20000000u128);
                 assert_eq!(TestAssets::balance(pool_asset, &1), 199606896309149793u128);
                 assert_eq!(TestAssets::balance(pool_asset, &2), 799906803112262u128);
-                if let Event::stable_asset(crate::pallet::Event::Redeemed(
+                if let Event::StableAsset(crate::pallet::Event::Redeemed(
                     _,
                     _,
                     amount,
@@ -841,7 +841,7 @@ fn redeem_multi_successful() {
                 assert_eq!(TestAssets::balance(coin1, &swap_id), 15000000u128);
                 assert_eq!(TestAssets::balance(pool_asset, &1), 199031790337401726u128);
                 assert_eq!(TestAssets::balance(pool_asset, &2), 802782332971002u128);
-                if let Event::stable_asset(crate::pallet::Event::Redeemed(
+                if let Event::StableAsset(crate::pallet::Event::Redeemed(
                     _,
                     _,
                     amount,
@@ -970,7 +970,7 @@ fn collect_fee_successful() {
                 assert_eq!(TestAssets::balance(coin1, &swap_id), 15000699u128);
                 assert_eq!(TestAssets::balance(pool_asset, &1), 299606896309149793u128);
                 assert_eq!(TestAssets::balance(pool_asset, &2), 400093690445074u128);
-                if let Event::stable_asset(crate::pallet::Event::FeeCollected(
+                if let Event::StableAsset(crate::pallet::Event::FeeCollected(
                     _,
                     _,
                     fee_recipient,

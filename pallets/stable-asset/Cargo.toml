@@ -17,12 +17,12 @@ codec = { package = "parity-scale-codec", version = "2.0.0", default-features = 
 [dependencies.frame-support]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "9c572625f6557dfdb19f47474369a0327d51dfbc"
 
 [dependencies.frame-system]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "9c572625f6557dfdb19f47474369a0327d51dfbc"
 
 [dev-dependencies]
 serde = { version = "1.0.101" }
@@ -30,27 +30,27 @@ serde = { version = "1.0.101" }
 [dev-dependencies.sp-core]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "9c572625f6557dfdb19f47474369a0327d51dfbc"
 
 [dev-dependencies.sp-io]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "9c572625f6557dfdb19f47474369a0327d51dfbc"
 
 [dependencies.sp-std]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "9c572625f6557dfdb19f47474369a0327d51dfbc"
 
 [dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "9c572625f6557dfdb19f47474369a0327d51dfbc"
 
 [dev-dependencies.pallet-balances]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "9c572625f6557dfdb19f47474369a0327d51dfbc"
 
 [features]
 default = ["std"]

@@ -86,6 +86,10 @@ pub mod traits {
 			redeem_fee: Self::AtLeast64BitUnsigned,
 			intial_a: Self::AtLeast64BitUnsigned,
 			fee_recipient: Self::AccountId,
+			/*
+			 * REVIEW:
+			 *  1. use DispatchResult instead of DispatchResultWithPostInfo.
+			 *     The same in other places. */
 		) -> DispatchResultWithPostInfo;
 
 		fn mint(
@@ -127,6 +131,12 @@ pub mod traits {
 		) -> DispatchResultWithPostInfo;
 
 		fn collect_fee(who: &Self::AccountId, pool_id: PoolId) -> DispatchResultWithPostInfo;
+
+		//
+		// REVIEW:
+		//  1. support to modify A.
+		//    Reference to this: https://github.com/open-web3-stack/open-runtime-module-library/blob/master/gradually-update/src/lib.rs#L225
+		//
 	}
 }
 
@@ -196,6 +206,12 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	//
+	// REVIEW:
+	//  1.add metadata
+	//    #[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance")]
+	//  2.add doc
+	//    /// Create pool. \[owner, pool_id, swap_id, pallet_id\]
 	pub enum Event<T: Config> {
 		CreatePool(
 			T::AccountId, // creator account id
@@ -300,6 +316,10 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		//
+		// REVIEW:
+		//  1. add benchmarks and update weights.
+		//
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn create_pool(
@@ -313,6 +333,10 @@ pub mod pallet {
 			intial_a: T::AtLeast64BitUnsigned,
 			fee_recipient: T::AccountId,
 		) -> DispatchResultWithPostInfo {
+			//
+			// REVIEW:
+			//  can everyone create pool?
+			//
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::create_pool(
 				&who,
@@ -399,6 +423,10 @@ pub mod pallet {
 	}
 }
 impl<T: Config> Pallet<T> {
+	//
+	// REVIEW:
+	//  T::PalletId::get().into_sub_account(pool_id);
+	//
 	pub(crate) fn convert_pool_id_to_account_id(pallet_id: T::AccountId, pool_id: PoolId) -> T::AccountId {
 		<T::AccountIdConvert as Convert<(T::AccountId, PoolId), T::AccountId>>::convert((pallet_id, pool_id))
 	}
@@ -422,6 +450,10 @@ impl<T: Config> Pallet<T> {
 		let balance_size: T::AtLeast64BitUnsigned = T::AtLeast64BitUnsigned::try_from(balances.len()).ok()?;
 		for x in balances.iter() {
 			sum = sum.checked_add(x)?;
+			//
+			// REVIEW:
+			//  different from https://github.com/curvefi/curve-contract/blob/b0bbf77f8f93c9c5f4e415bce9cd71f0cdee960e/contracts/pools/3pool/StableSwap3Pool.vy#L204
+			//
 			ann = ann.checked_mul(&balance_size)?;
 		}
 		if sum == zero {
@@ -825,6 +857,10 @@ impl<T: Config> StableAsset for Pallet<T> {
 		intial_a: Self::AtLeast64BitUnsigned,
 		fee_recipient: Self::AccountId,
 	) -> DispatchResultWithPostInfo {
+		//
+		// REVIEW:
+		//  1. check assets.len() max and min.
+		//
 		ensure!(assets.len() > 1, Error::<T>::ArgumentsError);
 		ensure!(assets.len() == precisions.len(), Error::<T>::ArgumentsMismatch);
 		let pool_id = PoolCount::<T>::try_mutate(|pool_count| -> Result<PoolId, DispatchError> {
@@ -859,6 +895,10 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 			Ok(pool_id)
 		})?;
+		//
+		// REVIEW:
+		//  move deposit_event into the try_mutate.
+		//
 		let swap_id: T::AccountId = Self::convert_pool_id_to_account_id(T::PalletId::get().into_account(), pool_id);
 		Self::deposit_event(Event::CreatePool(
 			who.clone(),
@@ -877,6 +917,11 @@ impl<T: Config> StableAsset for Pallet<T> {
 		min_mint_amount: Self::Balance,
 	) -> DispatchResultWithPostInfo {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+			//
+			// REVIEW:
+			//  let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+			//  then, can modify pool_info directly.
+			//
 			ensure!(maybe_pool_info.is_some(), Error::<T>::PoolNotFound);
 			let pool_info: PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId> =
 				maybe_pool_info.clone().expect("pool should exist");

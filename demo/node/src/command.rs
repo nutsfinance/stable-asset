@@ -19,6 +19,7 @@ use crate::{chain_spec, service};
 use crate::cli::{Cli, Subcommand};
 use sc_cli::{SubstrateCli, RuntimeVersion, Role, ChainSpec};
 use sc_service::PartialComponents;
+use node_runtime::Block;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -113,6 +114,11 @@ pub fn run() -> sc_cli::Result<()> {
 					= service::new_partial(&config)?;
 				Ok((cmd.run(client, backend), task_manager))
 			})
+		},
+		Some(Subcommand::Benchmark(cmd)) => {
+			let runner = cli.create_runner(cmd)?;
+
+			runner.sync_run(|config| cmd.run::<Block, service::Executor>(config))
 		},
 		None => {
 			let runner = cli.create_runner(&cli.run)?;

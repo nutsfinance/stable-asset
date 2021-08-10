@@ -6,6 +6,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+mod benchmarking;
+
 use frame_system::RawOrigin;
 use pallet_assets::Call as AssetsCall;
 use pallet_grandpa::fg_primitives;
@@ -276,11 +278,11 @@ impl pallet_sudo::Config for Runtime {
 type AssetId = u32;
 
 parameter_types! {
-    pub const AssetDeposit: Balance = 1;
+    pub const AssetDeposit: Balance = 0;
     pub const StringLimit: u32 = 50;
-    pub const MetadataDepositBase: Balance = 1;
-    pub const MetadataDepositPerByte: Balance = 1;
-    pub const ApprovalDeposit: Balance = 1;
+    pub const MetadataDepositBase: Balance = 0;
+    pub const MetadataDepositPerByte: Balance = 0;
+    pub const ApprovalDeposit: Balance = 0;
 }
 
 pub struct EnsureStableAsset;
@@ -632,10 +634,8 @@ impl_runtime_apis! {
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
-            //use nutsfinance_stable_asset::benchmarking::Pallet as StableAsset;
-
-            impl frame_system_benchmarking::Config for Runtime {}
+            use frame_benchmarking::{Benchmarking, BenchmarkBatch, TrackedStorageKey};
+            use orml_benchmarking::{add_benchmark as orml_add_benchmark};
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -653,9 +653,7 @@ impl_runtime_apis! {
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
 
-            add_benchmark!(params, batches, pallet_balances, Balances);
-            add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-            //add_benchmark!(params, batches, nutsfinance_stable_asset, StableAsset);
+            orml_add_benchmark!(params, batches, nutsfinance_stable_asset, benchmarking::nutsfinance_stable_asset);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

@@ -13,9 +13,7 @@ use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthority
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_io;
 use sp_runtime::traits::AccountIdConversion;
-use sp_runtime::traits::Convert;
 use sp_runtime::traits::Dispatchable;
 use sp_runtime::traits::{
     AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify,
@@ -299,6 +297,13 @@ impl EnsureOrigin<Origin> for EnsureStableAsset {
             r => Err(Origin::from(r)),
         })
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn successful_origin() -> Origin {
+        let module_id = StableAssetPalletId::get();
+        let account_id: AccountId = module_id.into_account();
+        Origin::from(RawOrigin::Signed(account_id))
+    }
 }
 
 impl pallet_assets::Config for Runtime {
@@ -330,28 +335,6 @@ pub struct EmptyUnbalanceHandler;
 impl OnUnbalanced<<pallet_balances::Pallet<Runtime> as Currency<AccountId>>::NegativeImbalance>
     for EmptyUnbalanceHandler
 {
-}
-
-pub struct AccountIdConvert;
-
-impl Convert<(AccountId, u32), AccountId> for AccountIdConvert {
-    fn convert(a: (AccountId, u32)) -> AccountId {
-        match a {
-            (pallet_id, pool_id) => {
-                let pallet_id_bytes: [u8; 32] = pallet_id.into();
-                let bytes: [u8; 4] = pool_id.to_be_bytes();
-                let mut res: [u8; 36] = [0; 36];
-                for idx in 0..pallet_id_bytes.len() {
-                    res[idx] = pallet_id_bytes[idx];
-                }
-                for idx in 0..bytes.len() {
-                    res[idx + 32] = bytes[idx];
-                }
-                let hash: [u8; 32] = sp_io::hashing::blake2_256(&res);
-                hash.into()
-            }
-        }
-    }
 }
 
 pub struct FrameAssets;
@@ -463,7 +446,6 @@ impl nutsfinance_stable_asset::Config for Runtime {
     type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
     type Precision = Precision;
     type FeePrecision = FeePrecision;
-    type AccountIdConvert = AccountIdConvert;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -642,6 +624,41 @@ impl_runtime_apis! {
             len: u32,
         ) -> pallet_transaction_payment::FeeDetails<Balance> {
             TransactionPayment::query_fee_details(uxt, len)
+        }
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    impl frame_benchmarking::Benchmark<Block> for Runtime {
+        fn dispatch_benchmark(
+            config: frame_benchmarking::BenchmarkConfig
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+            use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
+            //use nutsfinance_stable_asset::benchmarking::Pallet as StableAsset;
+
+            impl frame_system_benchmarking::Config for Runtime {}
+
+            let whitelist: Vec<TrackedStorageKey> = vec![
+                // Block Number
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec().into(),
+                // Total Issuance
+                hex_literal::hex!("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80").to_vec().into(),
+                // Execution Phase
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a").to_vec().into(),
+                // Event Count
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec().into(),
+                // System Events
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7").to_vec().into(),
+            ];
+
+            let mut batches = Vec::<BenchmarkBatch>::new();
+            let params = (&config, &whitelist);
+
+            add_benchmark!(params, batches, pallet_balances, Balances);
+            add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+            //add_benchmark!(params, batches, nutsfinance_stable_asset, StableAsset);
+
+            if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
+            Ok(batches)
         }
     }
 }

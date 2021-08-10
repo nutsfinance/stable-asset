@@ -26,7 +26,6 @@ use frame_support::{
 };
 use frame_system as system;
 use sp_core::H256;
-use sp_runtime::traits::Convert;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -107,16 +106,6 @@ pub type Balance = u128;
 type AtLeast64BitUnsigned = u128;
 
 pub type AssetId = i64;
-
-pub struct AccountIdConvert;
-
-impl Convert<(u64, u32), u64> for AccountIdConvert {
-	fn convert(a: (u64, u32)) -> u64 {
-		match a {
-			(pallet_id, pool_id) => pallet_id + pool_id as u64,
-		}
-	}
-}
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -252,7 +241,6 @@ impl stable_asset::Config for Test {
 	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
 	type Precision = Precision;
 	type FeePrecision = FeePrecision;
-	type AccountIdConvert = AccountIdConvert;
 }
 
 // Build genesis storage according to the mock runtime.

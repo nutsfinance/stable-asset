@@ -29,11 +29,11 @@ mod tests;
 
 use crate::traits::StableAsset;
 use frame_support::codec::{Decode, Encode};
-use frame_support::dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo};
+use frame_support::dispatch::{DispatchResult};
 use frame_support::ensure;
 use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 use frame_support::traits::Get;
-use sp_runtime::traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, Convert, One, Zero};
+use sp_runtime::traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
 use sp_std::convert::TryFrom;
 use sp_std::prelude::*;
 
@@ -57,11 +57,12 @@ pub struct PoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId> {
 	fee_recipient: AccountId,
 	account_id: AccountId,
 	pallet_id: AccountId,
+	admin: AccountId,
 }
 
 pub mod traits {
 	use crate::{PoolId, PoolInfo, PoolTokenIndex};
-	use frame_support::dispatch::DispatchResultWithPostInfo;
+	use frame_support::dispatch::DispatchResult;
 	use sp_std::prelude::*;
 
 	pub trait StableAsset {
@@ -86,14 +87,14 @@ pub mod traits {
 			redeem_fee: Self::AtLeast64BitUnsigned,
 			intial_a: Self::AtLeast64BitUnsigned,
 			fee_recipient: Self::AccountId,
-		) -> DispatchResultWithPostInfo;
+		) -> DispatchResult;
 
 		fn mint(
 			who: &Self::AccountId,
 			pool_id: PoolId,
 			amounts: Vec<Self::Balance>,
 			min_mint_amount: Self::Balance,
-		) -> DispatchResultWithPostInfo;
+		) -> DispatchResult;
 
 		fn swap(
 			who: &Self::AccountId,
@@ -102,14 +103,14 @@ pub mod traits {
 			j: PoolTokenIndex,
 			dx: Self::Balance,
 			min_dy: Self::Balance,
-		) -> DispatchResultWithPostInfo;
+		) -> DispatchResult;
 
 		fn redeem_proportion(
 			who: &Self::AccountId,
 			pool_id: PoolId,
 			amount: Self::Balance,
 			min_redeem_amounts: Vec<Self::Balance>,
-		) -> DispatchResultWithPostInfo;
+		) -> DispatchResult;
 
 		fn redeem_single(
 			who: &Self::AccountId,
@@ -117,16 +118,18 @@ pub mod traits {
 			amount: Self::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: Self::Balance,
-		) -> DispatchResultWithPostInfo;
+		) -> DispatchResult;
 
 		fn redeem_multi(
 			who: &Self::AccountId,
 			pool_id: PoolId,
 			amounts: Vec<Self::Balance>,
 			max_redeem_amount: Self::Balance,
-		) -> DispatchResultWithPostInfo;
+		) -> DispatchResult;
 
-		fn collect_fee(who: &Self::AccountId, pool_id: PoolId) -> DispatchResultWithPostInfo;
+		fn collect_fee(who: &Self::AccountId, pool_id: PoolId) -> DispatchResult;
+
+		fn modify_a(who: &Self::AccountId, pool_id: PoolId, a: Self::AtLeast64BitUnsigned,) -> DispatchResult;
 	}
 }
 
@@ -136,12 +139,12 @@ pub mod pallet {
 	use crate::traits::StableAsset;
 	use frame_support::traits::tokens::fungibles;
 	use frame_support::{
-		dispatch::{Codec, DispatchResultWithPostInfo},
+		dispatch::{Codec, DispatchResult},
 		pallet_prelude::*,
 		transactional, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, Convert, One, Zero};
+	use sp_runtime::traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
 	use sp_std::convert::{From, TryFrom};
 	use sp_std::prelude::*;
 
@@ -173,7 +176,6 @@ pub mod pallet {
 		type Precision: Get<Self::AtLeast64BitUnsigned>;
 		#[pallet::constant]
 		type FeePrecision: Get<Self::AtLeast64BitUnsigned>;
-		type AccountIdConvert: Convert<(Self::AccountId, PoolId), Self::AccountId>;
 	}
 
 	#[pallet::pallet]
@@ -194,7 +196,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId")]
+	#[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		CreatePool(
@@ -231,6 +233,11 @@ pub mod pallet {
 			T::AccountId, // fee recipient account id
 			T::Balance,   // collected fee amount
 		),
+		AModified(
+			T::AccountId, // modifier account id
+			PoolId,       // a modified pool id
+			T::AtLeast64BitUnsigned, // new a value
+		),
 	}
 
 	#[pallet::error]
@@ -244,6 +251,7 @@ pub mod pallet {
 		SwapUnderMin,
 		RedeemUnderMin,
 		RedeemOverMax,
+		NotAdmin,
 	}
 
 	#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
@@ -312,7 +320,7 @@ pub mod pallet {
 			redeem_fee: T::AtLeast64BitUnsigned,
 			intial_a: T::AtLeast64BitUnsigned,
 			fee_recipient: T::AccountId,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::create_pool(
 				&who,
@@ -334,7 +342,7 @@ pub mod pallet {
 			pool_id: PoolId,
 			amounts: Vec<T::Balance>,
 			min_mint_amount: T::Balance,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::mint(&who, pool_id, amounts, min_mint_amount)
 		}
@@ -348,7 +356,7 @@ pub mod pallet {
 			j: PoolTokenIndex,
 			dx: T::Balance,
 			min_dy: T::Balance,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::swap(&who, pool_id, i, j, dx, min_dy)
 		}
@@ -360,7 +368,7 @@ pub mod pallet {
 			pool_id: PoolId,
 			amount: T::Balance,
 			min_redeem_amounts: Vec<T::Balance>,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::redeem_proportion(&who, pool_id, amount, min_redeem_amounts)
 		}
@@ -373,7 +381,7 @@ pub mod pallet {
 			amount: T::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: T::Balance,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::redeem_single(&who, pool_id, amount, i, min_redeem_amount)
 		}
@@ -385,24 +393,27 @@ pub mod pallet {
 			pool_id: PoolId,
 			amounts: Vec<T::Balance>,
 			max_redeem_amount: T::Balance,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::redeem_multi(&who, pool_id, amounts, max_redeem_amount)
 		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn collect_fee(origin: OriginFor<T>, pool_id: PoolId) -> DispatchResultWithPostInfo {
+		pub fn collect_fee(origin: OriginFor<T>, pool_id: PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::collect_fee(&who, pool_id)
+		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[transactional]
+		pub fn modify_a(origin: OriginFor<T>, pool_id: PoolId, a: T::AtLeast64BitUnsigned,) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			<Self as StableAsset>::modify_a(&who, pool_id, a)
 		}
 	}
 }
 impl<T: Config> Pallet<T> {
-	pub(crate) fn convert_pool_id_to_account_id(pallet_id: T::AccountId, pool_id: PoolId) -> T::AccountId {
-		<T::AccountIdConvert as Convert<(T::AccountId, PoolId), T::AccountId>>::convert((pallet_id, pool_id))
-	}
-
 	pub(crate) fn convert_vec_number_to_balance(numbers: Vec<T::AtLeast64BitUnsigned>) -> Vec<T::Balance> {
 		numbers.into_iter().map(|x| x.into()).collect()
 	}
@@ -824,18 +835,17 @@ impl<T: Config> StableAsset for Pallet<T> {
 		redeem_fee: Self::AtLeast64BitUnsigned,
 		intial_a: Self::AtLeast64BitUnsigned,
 		fee_recipient: Self::AccountId,
-	) -> DispatchResultWithPostInfo {
+	) -> DispatchResult {
 		ensure!(assets.len() > 1, Error::<T>::ArgumentsError);
+		ensure!(assets.len() <= 3, Error::<T>::ArgumentsError);
 		ensure!(assets.len() == precisions.len(), Error::<T>::ArgumentsMismatch);
-		let pool_id = PoolCount::<T>::try_mutate(|pool_count| -> Result<PoolId, DispatchError> {
+		PoolCount::<T>::try_mutate(|pool_count| -> DispatchResult {
 			let pool_id = *pool_count;
-
+			let swap_id: T::AccountId = T::PalletId::get().into_sub_account(pool_id);
 			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 				ensure!(maybe_pool_info.is_none(), Error::<T>::InconsistentStorage);
 
 				let balances = vec![Zero::zero(); assets.len()];
-				let swap_id: T::AccountId =
-					Self::convert_pool_id_to_account_id(T::PalletId::get().into_account(), pool_id);
 				frame_system::Pallet::<T>::inc_providers(&swap_id);
 				*maybe_pool_info = Some(PoolInfo {
 					pool_asset,
@@ -848,8 +858,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 					a: intial_a,
 					balances,
 					fee_recipient,
-					account_id: swap_id,
+					account_id: swap_id.clone(),
 					pallet_id: T::PalletId::get().into_account(),
+					admin: who.clone(),
 				});
 
 				Ok(())
@@ -857,17 +868,15 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 			*pool_count = pool_id.checked_add(1).ok_or(Error::<T>::InconsistentStorage)?;
 
-			Ok(pool_id)
+			Self::deposit_event(Event::CreatePool(
+				who.clone(),
+				pool_id,
+				swap_id.clone(),
+				T::PalletId::get().into_account(),
+			));
+			Ok(())
 		})?;
-		let swap_id: T::AccountId = Self::convert_pool_id_to_account_id(T::PalletId::get().into_account(), pool_id);
-		Self::deposit_event(Event::CreatePool(
-			who.clone(),
-			pool_id,
-			swap_id,
-			T::PalletId::get().into_account(),
-		));
-
-		Ok(().into())
+		Ok(()).into()
 	}
 
 	fn mint(
@@ -875,11 +884,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 		pool_id: PoolId,
 		amounts: Vec<Self::Balance>,
 		min_mint_amount: Self::Balance,
-	) -> DispatchResultWithPostInfo {
+	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			ensure!(maybe_pool_info.is_some(), Error::<T>::PoolNotFound);
-			let pool_info: PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId> =
-				maybe_pool_info.clone().expect("pool should exist");
+			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let MintResult {
 				mint_amount,
 				fee_amount,
@@ -897,20 +904,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			T::Assets::mint_into(pool_info.pool_asset, &pool_info.fee_recipient, fee_amount)?;
 			T::Assets::mint_into(pool_info.pool_asset, who, mint_amount)?;
 			Self::deposit_event(Event::Minted(who.clone(), pool_id, mint_amount, amounts, fee_amount));
-			*maybe_pool_info = Some(PoolInfo {
-				pool_asset: pool_info.pool_asset,
-				assets: pool_info.assets,
-				precisions: pool_info.precisions,
-				mint_fee: pool_info.mint_fee,
-				swap_fee: pool_info.swap_fee,
-				redeem_fee: pool_info.redeem_fee,
-				total_supply,
-				a: pool_info.a,
-				balances,
-				fee_recipient: pool_info.fee_recipient,
-				account_id: pool_info.account_id,
-				pallet_id: pool_info.pallet_id,
-			});
+			pool_info.total_supply = total_supply;
+			pool_info.balances = balances;
 			Ok(())
 		})?;
 		Ok(().into())
@@ -923,11 +918,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 		j: PoolTokenIndex,
 		dx: Self::Balance,
 		min_dy: Self::Balance,
-	) -> DispatchResultWithPostInfo {
+	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			ensure!(maybe_pool_info.is_some(), Error::<T>::PoolNotFound);
-			let pool_info: PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId> =
-				maybe_pool_info.clone().expect("pool should exist");
+			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let SwapResult { dy, y, balance_i } = Self::get_swap_amount(&pool_info, i, j, dx)?;
 			ensure!(dy >= min_dy, Error::<T>::SwapUnderMin);
 			let mut balances = pool_info.balances.clone();
@@ -940,20 +933,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			let asset_i = pool_info.assets[i_usize];
 			let asset_j = pool_info.assets[j_usize];
 			Self::deposit_event(Event::TokenSwapped(who.clone(), pool_id, asset_i, asset_j, dx, dy));
-			*maybe_pool_info = Some(PoolInfo {
-				pool_asset: pool_info.pool_asset,
-				assets: pool_info.assets,
-				precisions: pool_info.precisions,
-				mint_fee: pool_info.mint_fee,
-				swap_fee: pool_info.swap_fee,
-				redeem_fee: pool_info.redeem_fee,
-				total_supply: pool_info.total_supply,
-				a: pool_info.a,
-				balances,
-				fee_recipient: pool_info.fee_recipient,
-				account_id: pool_info.account_id,
-				pallet_id: pool_info.pallet_id,
-			});
+			pool_info.balances = balances;
 			Ok(())
 		})?;
 		Ok(().into())
@@ -964,11 +944,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 		pool_id: PoolId,
 		amount: Self::Balance,
 		min_redeem_amounts: Vec<Self::Balance>,
-	) -> DispatchResultWithPostInfo {
+	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			ensure!(maybe_pool_info.is_some(), Error::<T>::PoolNotFound);
-			let pool_info: PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId> =
-				maybe_pool_info.clone().expect("pool should exist");
+			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(
 				min_redeem_amounts.len() == pool_info.assets.len(),
 				Error::<T>::ArgumentsMismatch
@@ -990,20 +968,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
 			Self::deposit_event(Event::Redeemed(who.clone(), pool_id, amount, amounts, fee_amount));
-			*maybe_pool_info = Some(PoolInfo {
-				pool_asset: pool_info.pool_asset,
-				assets: pool_info.assets,
-				precisions: pool_info.precisions,
-				mint_fee: pool_info.mint_fee,
-				swap_fee: pool_info.swap_fee,
-				redeem_fee: pool_info.redeem_fee,
-				total_supply,
-				a: pool_info.a,
-				balances,
-				fee_recipient: pool_info.fee_recipient,
-				account_id: pool_info.account_id,
-				pallet_id: pool_info.pallet_id,
-			});
+			pool_info.total_supply = total_supply;
+			pool_info.balances = balances;
 			Ok(())
 		})?;
 		Ok(().into())
@@ -1015,11 +981,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 		amount: Self::Balance,
 		i: PoolTokenIndex,
 		min_redeem_amount: Self::Balance,
-	) -> DispatchResultWithPostInfo {
+	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			ensure!(maybe_pool_info.is_some(), Error::<T>::PoolNotFound);
-			let pool_info: PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId> =
-				maybe_pool_info.clone().expect("pool should exist");
+			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let RedeemSingleResult {
 				dy,
 				fee_amount,
@@ -1044,20 +1008,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 				}
 			}
 			Self::deposit_event(Event::Redeemed(who.clone(), pool_id, amount, amounts, fee_amount));
-			*maybe_pool_info = Some(PoolInfo {
-				pool_asset: pool_info.pool_asset,
-				assets: pool_info.assets,
-				precisions: pool_info.precisions,
-				mint_fee: pool_info.mint_fee,
-				swap_fee: pool_info.swap_fee,
-				redeem_fee: pool_info.redeem_fee,
-				total_supply,
-				a: pool_info.a,
-				balances,
-				fee_recipient: pool_info.fee_recipient,
-				account_id: pool_info.account_id,
-				pallet_id: pool_info.pallet_id,
-			});
+			pool_info.total_supply = total_supply;
+			pool_info.balances = balances;
 			Ok(())
 		})?;
 		Ok(().into())
@@ -1068,11 +1020,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 		pool_id: PoolId,
 		amounts: Vec<Self::Balance>,
 		max_redeem_amount: Self::Balance,
-	) -> DispatchResultWithPostInfo {
+	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			ensure!(maybe_pool_info.is_some(), Error::<T>::PoolNotFound);
-			let pool_info: PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId> =
-				maybe_pool_info.clone().expect("pool should exist");
+			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let RedeemMultiResult {
 				redeem_amount,
 				fee_amount,
@@ -1098,30 +1048,16 @@ impl<T: Config> StableAsset for Pallet<T> {
 				amounts,
 				fee_amount,
 			));
-			*maybe_pool_info = Some(PoolInfo {
-				pool_asset: pool_info.pool_asset,
-				assets: pool_info.assets,
-				precisions: pool_info.precisions,
-				mint_fee: pool_info.mint_fee,
-				swap_fee: pool_info.swap_fee,
-				redeem_fee: pool_info.redeem_fee,
-				total_supply,
-				a: pool_info.a,
-				balances,
-				fee_recipient: pool_info.fee_recipient,
-				account_id: pool_info.account_id,
-				pallet_id: pool_info.pallet_id,
-			});
+			pool_info.total_supply = total_supply;
+			pool_info.balances = balances;
 			Ok(())
 		})?;
 		Ok(().into())
 	}
 
-	fn collect_fee(who: &Self::AccountId, pool_id: PoolId) -> DispatchResultWithPostInfo {
+	fn collect_fee(who: &Self::AccountId, pool_id: PoolId) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			ensure!(maybe_pool_info.is_some(), Error::<T>::PoolNotFound);
-			let pool_info: PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId> =
-				maybe_pool_info.clone().expect("pool should exist");
+			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let PendingFeeResult {
 				fee_amount,
 				balances,
@@ -1132,21 +1068,20 @@ impl<T: Config> StableAsset for Pallet<T> {
 				let fee_recipient = pool_info.fee_recipient.clone();
 				T::Assets::mint_into(pool_info.pool_asset, &fee_recipient, fee_amount)?;
 				Self::deposit_event(Event::FeeCollected(who.clone(), pool_id, fee_recipient, fee_amount));
-				*maybe_pool_info = Some(PoolInfo {
-					pool_asset: pool_info.pool_asset,
-					assets: pool_info.assets,
-					precisions: pool_info.precisions,
-					mint_fee: pool_info.mint_fee,
-					swap_fee: pool_info.swap_fee,
-					redeem_fee: pool_info.redeem_fee,
-					total_supply,
-					a: pool_info.a,
-					balances,
-					fee_recipient: pool_info.fee_recipient,
-					account_id: pool_info.account_id,
-					pallet_id: pool_info.pallet_id,
-				});
+				pool_info.total_supply = total_supply;
+				pool_info.balances = balances;
 			}
+			Ok(())
+		})?;
+		Ok(().into())
+	}
+
+	fn modify_a(who: &Self::AccountId, pool_id: PoolId, a: Self::AtLeast64BitUnsigned) -> DispatchResult {
+		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+			ensure!(pool_info.admin == who.clone(), Error::<T>::NotAdmin);
+			Self::deposit_event(Event::AModified(who.clone(), pool_id, a));
+			pool_info.a = a;
 			Ok(())
 		})?;
 		Ok(().into())

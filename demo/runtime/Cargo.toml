@@ -37,6 +37,11 @@ sp-transaction-pool = { default-features = false, git = 'https://github.com/pari
 sp-version = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "9c572625f6557dfdb19f47474369a0327d51dfbc" }
 sp-io = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "9c572625f6557dfdb19f47474369a0327d51dfbc" }
 
+# Used for runtime benchmarking
+frame-benchmarking = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "9c572625f6557dfdb19f47474369a0327d51dfbc", optional = true }
+frame-system-benchmarking = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "9c572625f6557dfdb19f47474369a0327d51dfbc", optional = true }
+hex-literal = { version = "0.3.1", optional = true }
+
 # Used for the node's RPCs
 frame-system-rpc-runtime-api = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "9c572625f6557dfdb19f47474369a0327d51dfbc" }
 pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "9c572625f6557dfdb19f47474369a0327d51dfbc" }
@@ -77,4 +82,14 @@ std = [
 	"frame-system/std",
 	"frame-system-rpc-runtime-api/std",
 	"nutsfinance-stable-asset/std",
+]
+runtime-benchmarks = [
+	"sp-runtime/runtime-benchmarks",
+	"frame-benchmarking",
+	"frame-support/runtime-benchmarks",
+	"frame-system-benchmarking",
+	"hex-literal",
+	"frame-system/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
 ]

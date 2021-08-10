@@ -78,7 +78,8 @@ fn create_pool_successful() {
 				balances: vec![0, 0],
 				fee_recipient: 1,
 				account_id: 8319403528785522541u64,
-				pallet_id: 8319403528785522541u64
+				pallet_id: 8319403528785522541u64,
+				admin: 1u64,
 			})
 		);
 	});
@@ -146,7 +147,8 @@ fn mint_successful_equal_amounts() {
 						balances: vec![100000000000000000u128, 100000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id
+						pallet_id: swap_id,
+						admin: 1u64,
 					})
 				);
 
@@ -184,7 +186,8 @@ fn mint_successful_different_amounts() {
 						balances: vec![100000000000000000u128, 200000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id
+						pallet_id: swap_id,
+						admin: 1u64,
 					})
 				);
 
@@ -315,7 +318,8 @@ fn swap_successful() {
 						balances: vec![150000000000000000u128, 149906803184304728u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id
+						pallet_id: swap_id,
+						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 85000000u128);
@@ -488,7 +492,8 @@ fn redeem_proportion_successful() {
 						balances: vec![66823026697812238u128, 133646053395624475u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id
+						pallet_id: swap_id,
+						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 93317697u128);
@@ -641,7 +646,8 @@ fn redeem_single_successful() {
 						balances: vec![4968377149858042u128, 200000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id
+						pallet_id: swap_id,
+						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 99503162u128);
@@ -783,7 +789,8 @@ fn redeem_multi_successful() {
 						balances: vec![50000000000000000u128, 150000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id
+						pallet_id: swap_id,
+						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 95000000u128);
@@ -890,7 +897,8 @@ fn collect_fee_successful() {
 						balances: vec![150000000000000000u128, 150006990000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id
+						pallet_id: swap_id,
+						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 85000000u128);

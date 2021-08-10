@@ -43,4 +43,3 @@ metastore_db
 *.csv
 *.vrt
 dependency-reduced-pom.xml
-Cargo.lock

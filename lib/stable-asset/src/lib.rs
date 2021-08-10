@@ -29,7 +29,7 @@ mod tests;
 
 use crate::traits::StableAsset;
 use frame_support::codec::{Decode, Encode};
-use frame_support::dispatch::{DispatchResult};
+use frame_support::dispatch::DispatchResult;
 use frame_support::ensure;
 use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 use frame_support::traits::Get;
@@ -129,7 +129,7 @@ pub mod traits {
 
 		fn collect_fee(who: &Self::AccountId, pool_id: PoolId) -> DispatchResult;
 
-		fn modify_a(who: &Self::AccountId, pool_id: PoolId, a: Self::AtLeast64BitUnsigned,) -> DispatchResult;
+		fn modify_a(who: &Self::AccountId, pool_id: PoolId, a: Self::AtLeast64BitUnsigned) -> DispatchResult;
 	}
 }
 
@@ -234,8 +234,8 @@ pub mod pallet {
 			T::Balance,   // collected fee amount
 		),
 		AModified(
-			T::AccountId, // modifier account id
-			PoolId,       // a modified pool id
+			T::AccountId,            // modifier account id
+			PoolId,                  // a modified pool id
 			T::AtLeast64BitUnsigned, // new a value
 		),
 	}
@@ -407,7 +407,7 @@ pub mod pallet {
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
-		pub fn modify_a(origin: OriginFor<T>, pool_id: PoolId, a: T::AtLeast64BitUnsigned,) -> DispatchResult {
+		pub fn modify_a(origin: OriginFor<T>, pool_id: PoolId, a: T::AtLeast64BitUnsigned) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::modify_a(&who, pool_id, a)
 		}

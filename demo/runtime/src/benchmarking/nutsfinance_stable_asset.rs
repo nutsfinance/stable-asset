@@ -17,10 +17,10 @@
 
 use crate::{AccountId, Runtime, StableAsset};
 
+use crate::benchmarking::utils::initialize_assets;
 use frame_benchmarking::{account, whitelisted_caller};
 use frame_system::RawOrigin;
 use orml_benchmarking::runtime_benchmarks;
-use crate::benchmarking::utils::initialize_assets;
 use sp_std::prelude::*;
 
 const SEED: u32 = 0;

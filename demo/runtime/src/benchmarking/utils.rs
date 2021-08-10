@@ -15,27 +15,59 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{
-	AccountId, Runtime, Assets, AssetId, StableAssetPalletId
-};
+use crate::{AccountId, AssetId, Assets, Runtime, StableAssetPalletId};
 
 use frame_system::RawOrigin;
-use sp_runtime::{
-	traits::AccountIdConversion,
-	DispatchResult,
-};
+use sp_runtime::{traits::AccountIdConversion, DispatchResult};
 use sp_std::prelude::*;
 
-pub fn initialize_assets(tester: AccountId, fee_recipient: AccountId, pool_asset: AssetId, asset_a: AssetId, asset_b: AssetId) -> DispatchResult {
+pub fn initialize_assets(
+	tester: AccountId,
+	fee_recipient: AccountId,
+	pool_asset: AssetId,
+	asset_a: AssetId,
+	asset_b: AssetId,
+) -> DispatchResult {
 	frame_system::Pallet::<Runtime>::inc_providers(&tester);
 	frame_system::Pallet::<Runtime>::inc_providers(&fee_recipient);
-	let _ = Assets::create(RawOrigin::Signed(tester.clone()).into(), pool_asset, sp_runtime::MultiAddress::Id(tester.clone()), 1)?;
-	let _ = Assets::create(RawOrigin::Signed(tester.clone()).into(), asset_a, sp_runtime::MultiAddress::Id(tester.clone()), 1)?;
-	let _ = Assets::create(RawOrigin::Signed(tester.clone()).into(), asset_b, sp_runtime::MultiAddress::Id(tester.clone()), 1)?;
-	let _ = Assets::mint(RawOrigin::Signed(tester.clone()).into(), asset_a, sp_runtime::MultiAddress::Id(tester.clone()), 100000000)?;
-	let _ = Assets::mint(RawOrigin::Signed(tester.clone()).into(), asset_b, sp_runtime::MultiAddress::Id(tester.clone()), 100000000)?;
+	let _ = Assets::create(
+		RawOrigin::Signed(tester.clone()).into(),
+		pool_asset,
+		sp_runtime::MultiAddress::Id(tester.clone()),
+		1,
+	)?;
+	let _ = Assets::create(
+		RawOrigin::Signed(tester.clone()).into(),
+		asset_a,
+		sp_runtime::MultiAddress::Id(tester.clone()),
+		1,
+	)?;
+	let _ = Assets::create(
+		RawOrigin::Signed(tester.clone()).into(),
+		asset_b,
+		sp_runtime::MultiAddress::Id(tester.clone()),
+		1,
+	)?;
+	let _ = Assets::mint(
+		RawOrigin::Signed(tester.clone()).into(),
+		asset_a,
+		sp_runtime::MultiAddress::Id(tester.clone()),
+		100000000,
+	)?;
+	let _ = Assets::mint(
+		RawOrigin::Signed(tester.clone()).into(),
+		asset_b,
+		sp_runtime::MultiAddress::Id(tester.clone()),
+		100000000,
+	)?;
 	let pallet_id: AccountId = StableAssetPalletId::get().into_account();
-	let _ = Assets::set_team(RawOrigin::Signed(tester.clone()).into(), pool_asset, sp_runtime::MultiAddress::Id(pallet_id.clone()), sp_runtime::MultiAddress::Id(pallet_id.clone()), sp_runtime::MultiAddress::Id(tester.clone()));
+	let _ = Assets::set_team(
+		RawOrigin::Signed(tester.clone()).into(),
+		pool_asset,
+		sp_runtime::MultiAddress::Id(pallet_id.clone()),
+		sp_runtime::MultiAddress::Id(pallet_id.clone()),
+		sp_runtime::MultiAddress::Id(tester.clone()),
+	);
 	Ok(().into())
 }
 

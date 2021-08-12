@@ -907,8 +907,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Ok(())
-		})?;
-		Ok(().into())
+		})
 	}
 
 	fn swap(

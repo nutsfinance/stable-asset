@@ -405,7 +405,7 @@ pub mod pallet {
 			<Self as StableAsset>::collect_fee(&who, pool_id)
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(T::WeightInfo:: modify_a())]
 		#[transactional]
 		pub fn modify_a(origin: OriginFor<T>, pool_id: PoolId, a: T::AtLeast64BitUnsigned) -> DispatchResult {
 			let who = ensure_signed(origin)?;

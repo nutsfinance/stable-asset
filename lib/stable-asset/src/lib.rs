@@ -1079,10 +1079,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(pool_info.admin == who.clone(), Error::<T>::NotAdmin);
-			Self::deposit_event(Event::AModified(who.clone(), pool_id, a));
 			pool_info.a = a;
+			Self::deposit_event(Event::AModified(who.clone(), pool_id, a));
 			Ok(())
-		})?;
-		Ok(().into())
+		})
 	}
 }

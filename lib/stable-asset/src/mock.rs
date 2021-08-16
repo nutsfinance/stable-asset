@@ -21,7 +21,7 @@ use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
-	traits::{Currency, OnUnbalanced, EnsureOrigin},
+	traits::{Currency, OnUnbalanced, EnsureOrigin, UnixTime},
 	PalletId,
 };
 use frame_system as system;
@@ -32,6 +32,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 };
 use sp_std::convert::TryFrom;
+use sp_std::time::Duration;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -244,11 +245,15 @@ impl EnsureOrigin<Origin> for EnsureStableAsset {
 		})
 	}
 
-	#[cfg(feature = "runtime-benchmarks")]
 	fn successful_origin() -> Origin {
-		let module_id = StableAssetPalletId::get();
-		let account_id: AccountId = module_id.into_account();
-		Origin::from(RawOrigin::Signed(account_id))
+		Origin::from(RawOrigin::Signed(Default::default()))
+	}
+}
+
+pub struct Timestamp;
+impl UnixTime for Timestamp {
+	fn now() -> Duration {
+		Duration::from_millis(1)
 	}
 }
 
@@ -264,6 +269,7 @@ impl stable_asset::Config for Test {
 	type FeePrecision = FeePrecision;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
+	type UnixTime = Timestamp;
 }
 
 // Build genesis storage according to the mock runtime.

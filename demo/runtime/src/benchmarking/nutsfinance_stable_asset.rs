@@ -22,6 +22,7 @@ use frame_benchmarking::{account, whitelisted_caller};
 use frame_system::RawOrigin;
 use orml_benchmarking::runtime_benchmarks;
 use sp_std::prelude::*;
+use sp_std::time::Duration;
 
 const SEED: u32 = 0;
 const POOL_ASSET: u32 = 0u32;
@@ -55,7 +56,7 @@ runtime_benchmarks! {
 		let fee_recipient: AccountId = account("fee", 0, SEED);
 		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone());
 		let pool_id = StableAsset::pool_count() - 1;
-	}: _(RawOrigin::Signed(tester), pool_id, 1000u128)
+	}: _(RawOrigin::Signed(tester), pool_id, 1000u128, Duration::from_millis(2629112370000))
 
 	mint {
 		let tester: AccountId = whitelisted_caller();

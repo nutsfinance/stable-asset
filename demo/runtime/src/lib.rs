@@ -284,13 +284,10 @@ pub struct EnsureStableAsset;
 impl EnsureOrigin<Origin> for EnsureStableAsset {
 	type Success = AccountId;
 	fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
-		let pallet_id = StableAssetPalletId::get();
-		let account_id: AccountId = pallet_id.into_account();
-
 		let result: Result<RawOrigin<AccountId>, Origin> = o.into();
 
 		result.and_then(|o| match o {
-			RawOrigin::Signed(id) if id == account_id => Ok(id),
+			RawOrigin::Signed(id) => Ok(id),
 			r => Err(Origin::from(r)),
 		})
 	}
@@ -433,6 +430,7 @@ impl nutsfinance_stable_asset::Config for Runtime {
 	type FeePrecision = FeePrecision;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
+	type UnixTime = pallet_timestamp::Pallet<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

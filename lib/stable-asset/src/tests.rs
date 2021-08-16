@@ -20,6 +20,7 @@ use frame_support::assert_noop;
 use frame_support::assert_ok;
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::fungibles::{Inspect, Mutate};
+use sp_std::time::Duration;
 
 fn last_event() -> Event {
 	frame_system::pallet::Pallet::<Test>::events()
@@ -75,11 +76,13 @@ fn create_pool_successful() {
 				redeem_fee: 1u128,
 				total_supply: 0u128,
 				a: 1u128,
+				a_time: Duration::from_millis(1),
+				future_a: 1u128,
+				future_a_time: Duration::from_millis(1),
 				balances: vec![0, 0],
 				fee_recipient: 1,
 				account_id: 8319403528785522541u64,
 				pallet_id: 8319403528785522541u64,
-				admin: 1u64,
 			})
 		);
 	});
@@ -144,11 +147,13 @@ fn mint_successful_equal_amounts() {
 						redeem_fee: 50000000u128,
 						total_supply: 200000000000000000u128,
 						a: 100u128,
+						a_time: Duration::from_millis(1),
+						future_a: 100u128,
+						future_a_time: Duration::from_millis(1),
 						balances: vec![100000000000000000u128, 100000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						admin: 1u64,
 					})
 				);
 
@@ -183,11 +188,13 @@ fn mint_successful_different_amounts() {
 						redeem_fee: 50000000u128,
 						total_supply: 299906803112262055u128,
 						a: 100u128,
+						a_time: Duration::from_millis(1),
+						future_a: 100u128,
+						future_a_time: Duration::from_millis(1),
 						balances: vec![100000000000000000u128, 200000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						admin: 1u64,
 					})
 				);
 
@@ -315,11 +322,13 @@ fn swap_successful() {
 						redeem_fee: 50000000u128,
 						total_supply: 299906803112262055u128,
 						a: 100u128,
+						a_time: Duration::from_millis(1),
+						future_a: 100u128,
+						future_a_time: Duration::from_millis(1),
 						balances: vec![150000000000000000u128, 149906803184304728u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 85000000u128);
@@ -489,11 +498,13 @@ fn redeem_proportion_successful() {
 						redeem_fee: 50000000u128,
 						total_supply: 200406803112262055u128,
 						a: 100u128,
+						a_time: Duration::from_millis(1),
+						future_a: 100u128,
+						future_a_time: Duration::from_millis(1),
 						balances: vec![66823026697812238u128, 133646053395624475u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 93317697u128);
@@ -643,11 +654,13 @@ fn redeem_single_successful() {
 						redeem_fee: 50000000u128,
 						total_supply: 200406803112262055u128,
 						a: 100u128,
+						a_time: Duration::from_millis(1),
+						future_a: 100u128,
+						future_a_time: Duration::from_millis(1),
 						balances: vec![4968377149858042u128, 200000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 99503162u128);
@@ -786,11 +799,13 @@ fn redeem_multi_successful() {
 						redeem_fee: 50000000u128,
 						total_supply: 199834572670372728u128,
 						a: 100u128,
+						a_time: Duration::from_millis(1),
+						future_a: 100u128,
+						future_a_time: Duration::from_millis(1),
 						balances: vec![50000000000000000u128, 150000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 95000000u128);
@@ -894,11 +909,13 @@ fn collect_fee_successful() {
 						redeem_fee: 50000000u128,
 						total_supply: 300006989999594867u128,
 						a: 100u128,
+						a_time: Duration::from_millis(1),
+						future_a: 100u128,
+						future_a_time: Duration::from_millis(1),
 						balances: vec![150000000000000000u128, 150006990000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						admin: 1u64,
 					})
 				);
 				assert_eq!(TestAssets::balance(coin0, &1), 85000000u128);

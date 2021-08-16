@@ -21,10 +21,11 @@ use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
-	traits::{Currency, OnUnbalanced},
+	traits::{Currency, OnUnbalanced, EnsureOrigin},
 	PalletId,
 };
 use frame_system as system;
+use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -231,6 +232,26 @@ type Imbalance = <pallet_balances::Pallet<Test> as Currency<AccountId>>::Negativ
 
 impl OnUnbalanced<Imbalance> for EmptyUnbalanceHandler {}
 
+pub struct EnsureStableAsset;
+impl EnsureOrigin<Origin> for EnsureStableAsset {
+	type Success = AccountId;
+	fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
+		let result: Result<RawOrigin<AccountId>, Origin> = o.into();
+
+		result.and_then(|o| match o {
+			RawOrigin::Signed(id) => Ok(id),
+			r => Err(Origin::from(r)),
+		})
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn successful_origin() -> Origin {
+		let module_id = StableAssetPalletId::get();
+		let account_id: AccountId = module_id.into_account();
+		Origin::from(RawOrigin::Signed(account_id))
+	}
+}
+
 impl stable_asset::Config for Test {
 	type Event = Event;
 	type AssetId = i64;
@@ -241,6 +262,8 @@ impl stable_asset::Config for Test {
 	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
 	type Precision = Precision;
 	type FeePrecision = FeePrecision;
+	type WeightInfo = ();
+	type ListingOrigin = EnsureStableAsset;
 }
 
 // Build genesis storage according to the mock runtime.

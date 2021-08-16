@@ -431,6 +431,8 @@ impl nutsfinance_stable_asset::Config for Runtime {
 	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
 	type Precision = Precision;
 	type FeePrecision = FeePrecision;
+	type WeightInfo = ();
+	type ListingOrigin = EnsureStableAsset;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

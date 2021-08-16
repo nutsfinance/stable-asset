@@ -136,7 +136,12 @@ pub mod traits {
 
 		fn collect_fee(who: &Self::AccountId, pool_id: PoolId) -> DispatchResult;
 
-		fn modify_a(who: &Self::AccountId, pool_id: PoolId, a: Self::AtLeast64BitUnsigned, future_a_time: Duration) -> DispatchResult;
+		fn modify_a(
+			who: &Self::AccountId,
+			pool_id: PoolId,
+			a: Self::AtLeast64BitUnsigned,
+			future_a_time: Duration,
+		) -> DispatchResult;
 	}
 }
 
@@ -148,8 +153,8 @@ pub mod pallet {
 	use frame_support::traits::tokens::fungibles;
 	use frame_support::{
 		dispatch::{Codec, DispatchResult},
-		traits::{EnsureOrigin, UnixTime},
 		pallet_prelude::*,
+		traits::{EnsureOrigin, UnixTime},
 		transactional, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
@@ -423,7 +428,12 @@ pub mod pallet {
 
 		#[pallet::weight(T::WeightInfo::modify_a())]
 		#[transactional]
-		pub fn modify_a(origin: OriginFor<T>, pool_id: PoolId, a: T::AtLeast64BitUnsigned, future_a_time: Duration) -> DispatchResult {
+		pub fn modify_a(
+			origin: OriginFor<T>,
+			pool_id: PoolId,
+			a: T::AtLeast64BitUnsigned,
+			future_a_time: Duration,
+		) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::modify_a(&who, pool_id, a, future_a_time)
@@ -567,7 +577,14 @@ impl<T: Config> Pallet<T> {
 			return Err(Error::<T>::ArgumentsMismatch);
 		}
 		let amounts = Self::convert_vec_balance_to_number(amounts_bal.to_vec());
-		let a: T::AtLeast64BitUnsigned = Self::get_a(pool_info.a, pool_info.a_time, pool_info.future_a, pool_info.future_a_time, <T::UnixTime as UnixTime>::now()).ok_or(Error::<T>::Math)?;
+		let a: T::AtLeast64BitUnsigned = Self::get_a(
+			pool_info.a,
+			pool_info.a_time,
+			pool_info.future_a,
+			pool_info.future_a_time,
+			<T::UnixTime as UnixTime>::now(),
+		)
+		.ok_or(Error::<T>::Math)?;
 		let old_d: T::AtLeast64BitUnsigned = pool_info.total_supply.into();
 		let zero: T::AtLeast64BitUnsigned = Zero::zero();
 		let fee_denominator: T::AtLeast64BitUnsigned = T::FeePrecision::get();
@@ -637,7 +654,14 @@ impl<T: Config> Pallet<T> {
 			return Err(Error::<T>::ArgumentsError);
 		}
 
-		let a: T::AtLeast64BitUnsigned = Self::get_a(pool_info.a, pool_info.a_time, pool_info.future_a, pool_info.future_a_time, <T::UnixTime as UnixTime>::now()).ok_or(Error::<T>::Math)?;
+		let a: T::AtLeast64BitUnsigned = Self::get_a(
+			pool_info.a,
+			pool_info.a_time,
+			pool_info.future_a,
+			pool_info.future_a_time,
+			<T::UnixTime as UnixTime>::now(),
+		)
+		.ok_or(Error::<T>::Math)?;
 		let d: T::AtLeast64BitUnsigned = pool_info.total_supply.into();
 		let fee_denominator: T::AtLeast64BitUnsigned = T::FeePrecision::get();
 		let mut balances: Vec<T::AtLeast64BitUnsigned> =
@@ -738,7 +762,14 @@ impl<T: Config> Pallet<T> {
 		}
 		let mut balances: Vec<T::AtLeast64BitUnsigned> =
 			Self::convert_vec_balance_to_number(pool_info.balances.clone());
-		let a: T::AtLeast64BitUnsigned = Self::get_a(pool_info.a, pool_info.a_time, pool_info.future_a, pool_info.future_a_time, <T::UnixTime as UnixTime>::now()).ok_or(Error::<T>::Math)?;
+		let a: T::AtLeast64BitUnsigned = Self::get_a(
+			pool_info.a,
+			pool_info.a_time,
+			pool_info.future_a,
+			pool_info.future_a_time,
+			<T::UnixTime as UnixTime>::now(),
+		)
+		.ok_or(Error::<T>::Math)?;
 		let d: T::AtLeast64BitUnsigned = pool_info.total_supply.into();
 		let fee_denominator: T::AtLeast64BitUnsigned = T::FeePrecision::get();
 		let mut fee_amount: T::AtLeast64BitUnsigned = zero;
@@ -785,7 +816,14 @@ impl<T: Config> Pallet<T> {
 		}
 		let mut balances: Vec<T::AtLeast64BitUnsigned> =
 			Self::convert_vec_balance_to_number(pool_info.balances.clone());
-		let a: T::AtLeast64BitUnsigned = Self::get_a(pool_info.a, pool_info.a_time, pool_info.future_a, pool_info.future_a_time, <T::UnixTime as UnixTime>::now()).ok_or(Error::<T>::Math)?;
+		let a: T::AtLeast64BitUnsigned = Self::get_a(
+			pool_info.a,
+			pool_info.a_time,
+			pool_info.future_a,
+			pool_info.future_a_time,
+			<T::UnixTime as UnixTime>::now(),
+		)
+		.ok_or(Error::<T>::Math)?;
 		let old_d: T::AtLeast64BitUnsigned = pool_info.total_supply.into();
 		let zero: T::AtLeast64BitUnsigned = Zero::zero();
 		for i in 0..balances.len() {
@@ -832,7 +870,14 @@ impl<T: Config> Pallet<T> {
 	) -> Result<PendingFeeResult<T>, Error<T>> {
 		let mut balances: Vec<T::AtLeast64BitUnsigned> =
 			Self::convert_vec_balance_to_number(pool_info.balances.clone());
-		let a: T::AtLeast64BitUnsigned = Self::get_a(pool_info.a, pool_info.a_time, pool_info.future_a, pool_info.future_a_time, <T::UnixTime as UnixTime>::now()).ok_or(Error::<T>::Math)?;
+		let a: T::AtLeast64BitUnsigned = Self::get_a(
+			pool_info.a,
+			pool_info.a_time,
+			pool_info.future_a,
+			pool_info.future_a_time,
+			<T::UnixTime as UnixTime>::now(),
+		)
+		.ok_or(Error::<T>::Math)?;
 		let old_d: T::AtLeast64BitUnsigned = pool_info.total_supply.into();
 		for (i, balance) in balances.iter_mut().enumerate() {
 			let balance_of: T::AtLeast64BitUnsigned =
@@ -1120,12 +1165,24 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Ok(().into())
 	}
 
-	fn modify_a(who: &Self::AccountId, pool_id: PoolId, a: Self::AtLeast64BitUnsigned, future_a_time: Duration) -> DispatchResult {
+	fn modify_a(
+		who: &Self::AccountId,
+		pool_id: PoolId,
+		a: Self::AtLeast64BitUnsigned,
+		future_a_time: Duration,
+	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(future_a_time > pool_info.a_time, Error::<T>::ArgumentsError);
 			let now = <T::UnixTime as UnixTime>::now();
-			let initial_a: T::AtLeast64BitUnsigned = Self::get_a(pool_info.a, pool_info.a_time, pool_info.future_a, pool_info.future_a_time, <T::UnixTime as UnixTime>::now()).ok_or(Error::<T>::Math)?;
+			let initial_a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_time,
+				pool_info.future_a,
+				pool_info.future_a_time,
+				<T::UnixTime as UnixTime>::now(),
+			)
+			.ok_or(Error::<T>::Math)?;
 			pool_info.a = initial_a;
 			pool_info.a_time = now;
 			pool_info.future_a = a;

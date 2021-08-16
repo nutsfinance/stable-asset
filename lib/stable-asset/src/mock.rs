@@ -21,7 +21,7 @@ use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
-	traits::{Currency, OnUnbalanced, EnsureOrigin, UnixTime},
+	traits::{Currency, EnsureOrigin, OnUnbalanced, UnixTime},
 	PalletId,
 };
 use frame_system as system;

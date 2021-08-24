@@ -422,7 +422,7 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::collect_fee())]
 		#[transactional]
 		pub fn collect_fee(origin: OriginFor<T>, pool_id: PoolId) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			T::ListingOrigin::ensure_origin(origin)?;
 			<Self as StableAsset>::collect_fee(&who, pool_id)
 		}
 
@@ -434,9 +434,8 @@ pub mod pallet {
 			a: T::AtLeast64BitUnsigned,
 			future_a_time: Duration,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin.clone())?;
-			let who = ensure_signed(origin)?;
-			<Self as StableAsset>::modify_a(&who, pool_id, a, future_a_time)
+			T::ListingOrigin::ensure_origin(origin)?;
+			<Self as StableAsset>::modify_a(pool_id, a, future_a_time)
 		}
 	}
 }

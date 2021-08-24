@@ -993,9 +993,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 			T::Assets::mint_into(pool_info.pool_asset, &pool_info.fee_recipient, fee_amount)?;
 			T::Assets::mint_into(pool_info.pool_asset, who, mint_amount)?;
-			Self::deposit_event(Event::Minted(who.clone(), pool_id, mint_amount, amounts, fee_amount));
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
+			Self::deposit_event(Event::Minted(who.clone(), pool_id, mint_amount, amounts, fee_amount));
 			Ok(())
 		})
 	}
@@ -1021,8 +1021,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			T::Assets::transfer(pool_info.assets[j_usize], &pool_info.account_id, who, dy, true)?;
 			let asset_i = pool_info.assets[i_usize];
 			let asset_j = pool_info.assets[j_usize];
-			Self::deposit_event(Event::TokenSwapped(who.clone(), pool_id, asset_i, asset_j, dx, dy));
 			pool_info.balances = balances;
+			Self::deposit_event(Event::TokenSwapped(who.clone(), pool_id, asset_i, asset_j, dx, dy));
 			Ok(())
 		})?;
 		Ok(().into())
@@ -1056,9 +1056,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, true)?;
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
-			Self::deposit_event(Event::Redeemed(who.clone(), pool_id, amount, amounts, fee_amount));
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
+			Self::deposit_event(Event::Redeemed(who.clone(), pool_id, amount, amounts, fee_amount));
 			Ok(())
 		})?;
 		Ok(().into())
@@ -1096,9 +1096,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 					amounts.push(Zero::zero());
 				}
 			}
-			Self::deposit_event(Event::Redeemed(who.clone(), pool_id, amount, amounts, fee_amount));
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
+			Self::deposit_event(Event::Redeemed(who.clone(), pool_id, amount, amounts, fee_amount));
 			Ok(())
 		})?;
 		Ok(().into())
@@ -1130,6 +1130,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 				}
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, burn_amount)?;
+			pool_info.total_supply = total_supply;
+			pool_info.balances = balances;
 			Self::deposit_event(Event::Redeemed(
 				who.clone(),
 				pool_id,
@@ -1137,8 +1139,6 @@ impl<T: Config> StableAsset for Pallet<T> {
 				amounts,
 				fee_amount,
 			));
-			pool_info.total_supply = total_supply;
-			pool_info.balances = balances;
 			Ok(())
 		})?;
 		Ok(().into())
@@ -1156,9 +1156,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 			if fee_amount > zero {
 				let fee_recipient = pool_info.fee_recipient.clone();
 				T::Assets::mint_into(pool_info.pool_asset, &fee_recipient, fee_amount)?;
-				Self::deposit_event(Event::FeeCollected(who.clone(), pool_id, fee_recipient, fee_amount));
 				pool_info.total_supply = total_supply;
 				pool_info.balances = balances;
+				Self::deposit_event(Event::FeeCollected(who.clone(), pool_id, fee_recipient, fee_amount));
 			}
 			Ok(())
 		})?;

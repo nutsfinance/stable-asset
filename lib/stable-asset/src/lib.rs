@@ -997,8 +997,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			let SwapResult { dy, y, balance_i } =
-				Self::get_swap_amount(&pool_info, i, j, dx)?;
+			let SwapResult { dy, y, balance_i } = Self::get_swap_amount(&pool_info, i, j, dx)?;
 			ensure!(dy >= min_dy, Error::<T>::SwapUnderMin);
 			let mut balances = pool_info.balances.clone();
 			let i_usize = i as usize;
@@ -1148,11 +1147,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
-	fn modify_a(
-		pool_id: PoolId,
-		a: Self::AtLeast64BitUnsigned,
-		future_a_block: T::BlockNumber,
-	) -> DispatchResult {
+	fn modify_a(pool_id: PoolId, a: Self::AtLeast64BitUnsigned, future_a_block: T::BlockNumber) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(future_a_block > pool_info.a_block, Error::<T>::ArgumentsError);

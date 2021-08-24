@@ -80,7 +80,9 @@ pub mod traits {
 
 		fn pool(
 			id: PoolId,
-		) -> Option<PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>>;
+		) -> Option<
+			PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>,
+		>;
 
 		fn create_pool(
 			who: &Self::AccountId,
@@ -255,7 +257,7 @@ pub mod pallet {
 			T::AccountId,            // modifier account id
 			PoolId,                  // a modified pool id
 			T::AtLeast64BitUnsigned, // new a value
-			T::BlockNumber,                // future time
+			T::BlockNumber,          // future time
 		),
 	}
 
@@ -912,7 +914,10 @@ impl<T: Config> StableAsset for Pallet<T> {
 		PoolCount::<T>::get()
 	}
 
-	fn pool(id: PoolId) -> Option<PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>> {
+	fn pool(
+		id: PoolId,
+	) -> Option<PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>>
+	{
 		Pools::<T>::get(id)
 	}
 
@@ -1014,7 +1019,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			let SwapResult { dy, y, balance_i } = Self::get_swap_amount(&pool_info, i, j, dx, frame_system::Pallet::<T>::block_number())?;
+			let SwapResult { dy, y, balance_i } =
+				Self::get_swap_amount(&pool_info, i, j, dx, frame_system::Pallet::<T>::block_number())?;
 			ensure!(dy >= min_dy, Error::<T>::SwapUnderMin);
 			let mut balances = pool_info.balances.clone();
 			let i_usize = i as usize;

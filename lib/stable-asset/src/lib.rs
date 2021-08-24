@@ -434,9 +434,8 @@ pub mod pallet {
 			a: T::AtLeast64BitUnsigned,
 			future_a_time: Duration,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin.clone())?;
-			let who = ensure_signed(origin)?;
-			<Self as StableAsset>::modify_a(&who, pool_id, a, future_a_time)
+			T::ListingOrigin::ensure_origin(origin)?;
+			<Self as StableAsset>::modify_a(pool_id, a, future_a_time)
 		}
 	}
 }

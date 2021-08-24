@@ -57,42 +57,42 @@ pub trait WeightInfo {
 
 impl WeightInfo for () {
 	fn create_pool() -> Weight {
-		(89_000_000 as Weight)
+		(77_000_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
 	fn modify_a() -> Weight {
-		(49_000_000 as Weight)
+		(43_000_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
 	fn mint() -> Weight {
-		(451_000_000 as Weight)
+		(342_000_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(12 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(12 as Weight))
 	}
 	fn swap() -> Weight {
-		(269_000_000 as Weight)
+		(199_000_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(7 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(7 as Weight))
 	}
 	fn collect_fee() -> Weight {
-		(143_000_000 as Weight)
+		(110_000_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(5 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
 	fn redeem_proportion() -> Weight {
-		(421_000_000 as Weight)
+		(314_000_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(10 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(10 as Weight))
 	}
 	fn redeem_single() -> Weight {
-		(335_000_000 as Weight)
+		(266_000_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(7 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(7 as Weight))
 	}
 	fn redeem_multi() -> Weight {
-		(430_000_000 as Weight)
+		(348_000_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(10 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(10 as Weight))
 	}

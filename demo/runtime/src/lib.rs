@@ -430,7 +430,6 @@ impl nutsfinance_stable_asset::Config for Runtime {
 	type FeePrecision = FeePrecision;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
-	type UnixTime = pallet_timestamp::Pallet<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

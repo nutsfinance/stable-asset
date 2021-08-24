@@ -923,7 +923,7 @@ fn collect_fee_successful() {
 				assert_eq!(TestAssets::balance(coin1, &swap_id), 15000699u128);
 				assert_eq!(TestAssets::balance(pool_asset, &1), 299606896309149793u128);
 				assert_eq!(TestAssets::balance(pool_asset, &2), 400093690445074u128);
-				if let Event::StableAsset(crate::pallet::Event::FeeCollected(_, _, fee_recipient, fee_amount)) =
+				if let Event::StableAsset(crate::pallet::Event::FeeCollected(_, fee_recipient, fee_amount)) =
 					last_event()
 				{
 					assert_eq!(fee_recipient, 2);

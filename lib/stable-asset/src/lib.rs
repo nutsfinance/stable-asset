@@ -16,6 +16,8 @@
 // limitations under the License.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
 
 extern crate sp_runtime;
 
@@ -454,14 +456,14 @@ impl<T: Config> Pallet<T> {
 			if a1 > a0 {
 				let diff = a1.checked_sub(&a0)?;
 				let amount = diff.checked_mul(&time_diff)?.checked_div(&time_diff_div)?;
-				return Some(a0.checked_add(&amount)?);
+				Some(a0.checked_add(&amount)?)
 			} else {
 				let diff = a0.checked_sub(&a1)?;
 				let amount = diff.checked_mul(&time_diff)?.checked_div(&time_diff_div)?;
-				return Some(a0.checked_sub(&amount)?);
+				Some(a0.checked_sub(&amount)?)
 			}
 		} else {
-			return Some(a1);
+			Some(a1)
 		}
 	}
 
@@ -949,7 +951,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 			Self::deposit_event(Event::CreatePool(
 				pool_id,
-				swap_id.clone(),
+				swap_id,
 				T::PalletId::get().into_account(),
 			));
 			Ok(())

@@ -55,6 +55,7 @@ pub trait WeightInfo {
 	fn redeem_multi() -> Weight;
 }
 
+#[allow(clippy::unnecessary_cast)]
 impl WeightInfo for () {
 	fn create_pool() -> Weight {
 		(77_000_000 as Weight)

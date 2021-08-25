@@ -923,7 +923,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 				ensure!(maybe_pool_info.is_none(), Error::<T>::InconsistentStorage);
 
-				let balances = vec![Zero::zero(); assets.len()];
+				let balances = sp_std::vec![Zero::zero(); assets.len()];
 				frame_system::Pallet::<T>::inc_providers(&swap_id);
 				let current_block = frame_system::Pallet::<T>::block_number();
 				*maybe_pool_info = Some(PoolInfo {

@@ -949,11 +949,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 			*pool_count = pool_id.checked_add(1).ok_or(Error::<T>::InconsistentStorage)?;
 
-			Self::deposit_event(Event::CreatePool(
-				pool_id,
-				swap_id,
-				T::PalletId::get().into_account(),
-			));
+			Self::deposit_event(Event::CreatePool(pool_id, swap_id, T::PalletId::get().into_account()));
 			Ok(())
 		})
 	}

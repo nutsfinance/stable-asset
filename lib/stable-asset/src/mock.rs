@@ -129,7 +129,7 @@ impl CreateAssets<AssetId> for TestAssets {
 	fn create_asset() -> Result<AssetId, DispatchError> {
 		ASSETS.with(|d| -> Result<AssetId, DispatchError> {
 			let mut d = d.borrow_mut();
-			let id = AssetId::try_from(d.len()).map_err(|_| DispatchError::Other(&"Too large id"))?;
+			let id = AssetId::try_from(d.len()).map_err(|_| DispatchError::Other("Too large id"))?;
 			d.push(Asset {
 				total: 0,
 				balances: HashMap::new(),
@@ -143,17 +143,17 @@ impl CreateAssets<AssetId> for TestAssets {
 impl Mutate<AccountId> for TestAssets {
 	fn mint_into(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
 		ASSETS.with(|d| -> DispatchResult {
-			let i = usize::try_from(asset).map_err(|_| DispatchError::Other(&"Index out of range"))?;
+			let i = usize::try_from(asset).map_err(|_| DispatchError::Other("Index out of range"))?;
 			let mut d = d.borrow_mut();
-			let a = d.get_mut(i).ok_or(DispatchError::Other(&"Index out of range"))?;
+			let a = d.get_mut(i).ok_or(DispatchError::Other("Index out of range"))?;
 
 			if let Some(x) = a.balances.get_mut(dest) {
-				*x = x.checked_add(amount).ok_or(DispatchError::Other(&"Overflow"))?;
+				*x = x.checked_add(amount).ok_or(DispatchError::Other("Overflow"))?;
 			} else {
 				a.balances.insert(*dest, amount);
 			}
 
-			a.total = a.total.checked_add(amount).ok_or(DispatchError::Other(&"Overflow"))?;
+			a.total = a.total.checked_add(amount).ok_or(DispatchError::Other("Overflow"))?;
 
 			Ok(())
 		})
@@ -161,15 +161,15 @@ impl Mutate<AccountId> for TestAssets {
 
 	fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance) -> Result<Balance, DispatchError> {
 		ASSETS.with(|d| -> DispatchResult {
-			let i = usize::try_from(asset).map_err(|_| DispatchError::Other(&"Index out of range"))?;
+			let i = usize::try_from(asset).map_err(|_| DispatchError::Other("Index out of range"))?;
 			let mut d = d.borrow_mut();
-			let a = d.get_mut(i).ok_or(DispatchError::Other(&"Index out of range"))?;
+			let a = d.get_mut(i).ok_or(DispatchError::Other("Index out of range"))?;
 
-			let x = a.balances.get_mut(dest).ok_or(DispatchError::Other(&"Not found"))?;
+			let x = a.balances.get_mut(dest).ok_or(DispatchError::Other("Not found"))?;
 
-			*x = x.checked_sub(amount).ok_or(DispatchError::Other(&"Overflow"))?;
+			*x = x.checked_sub(amount).ok_or(DispatchError::Other("Overflow"))?;
 
-			a.total = a.total.checked_sub(amount).ok_or(DispatchError::Other(&"Overflow"))?;
+			a.total = a.total.checked_sub(amount).ok_or(DispatchError::Other("Overflow"))?;
 
 			Ok(())
 		})?;
@@ -186,7 +186,7 @@ impl Inspect<AccountId> for TestAssets {
 				let i = usize::try_from(asset).ok()?;
 				let d = d.borrow();
 				let a = d.get(i)?;
-				a.balances.get(who).map(|x| *x)
+				a.balances.get(who).copied()
 			})
 			.unwrap_or(0)
 	}

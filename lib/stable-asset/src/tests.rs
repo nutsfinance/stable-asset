@@ -46,7 +46,7 @@ fn create_pool() -> (i64, i64, i64, u64) {
 		100u128,
 		2,
 	));
-	return (coin0, coin1, pool_asset, 8319403528785522541u64);
+	(coin0, coin1, pool_asset, 8319403528785522541u64)
 }
 
 #[test]
@@ -138,7 +138,7 @@ fn mint_successful_equal_amounts() {
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(PoolInfo {
-						pool_asset: pool_asset,
+						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
 						mint_fee: 10000000u128,
@@ -179,7 +179,7 @@ fn mint_successful_different_amounts() {
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(PoolInfo {
-						pool_asset: pool_asset,
+						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
 						mint_fee: 10000000u128,
@@ -313,7 +313,7 @@ fn swap_successful() {
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(PoolInfo {
-						pool_asset: pool_asset,
+						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
 						mint_fee: 10000000u128,
@@ -489,7 +489,7 @@ fn redeem_proportion_successful() {
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(PoolInfo {
-						pool_asset: pool_asset,
+						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
 						mint_fee: 10000000u128,
@@ -645,7 +645,7 @@ fn redeem_single_successful() {
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(PoolInfo {
-						pool_asset: pool_asset,
+						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
 						mint_fee: 10000000u128,
@@ -790,7 +790,7 @@ fn redeem_multi_successful() {
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(PoolInfo {
-						pool_asset: pool_asset,
+						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
 						mint_fee: 10000000u128,
@@ -900,7 +900,7 @@ fn collect_fee_successful() {
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(PoolInfo {
-						pool_asset: pool_asset,
+						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
 						mint_fee: 10000000u128,

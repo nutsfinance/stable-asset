@@ -967,7 +967,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				fee_amount,
 				balances,
 				total_supply,
-			} = Self::get_mint_amount(&pool_info, &amounts)?;
+			} = Self::get_mint_amount(pool_info, &amounts)?;
 			ensure!(mint_amount >= min_mint_amount, Error::<T>::MintUnderMin);
 			for (i, amount) in amounts.iter().enumerate() {
 				if *amount == Zero::zero() {
@@ -995,7 +995,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			let SwapResult { dy, y, balance_i } = Self::get_swap_amount(&pool_info, i, j, dx)?;
+			let SwapResult { dy, y, balance_i } = Self::get_swap_amount(pool_info, i, j, dx)?;
 			ensure!(dy >= min_dy, Error::<T>::SwapUnderMin);
 			let mut balances = pool_info.balances.clone();
 			let i_usize = i as usize;
@@ -1030,7 +1030,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				fee_amount,
 				total_supply,
 				redeem_amount,
-			} = Self::get_redeem_proportion_amount(&pool_info, amount)?;
+			} = Self::get_redeem_proportion_amount(pool_info, amount)?;
 			let zero: T::Balance = Zero::zero();
 			for i in 0..amounts.len() {
 				ensure!(amounts[i] >= min_redeem_amounts[i], Error::<T>::RedeemUnderMin);
@@ -1062,7 +1062,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				total_supply,
 				balances,
 				redeem_amount,
-			} = Self::get_redeem_single_amount(&pool_info, amount, i)?;
+			} = Self::get_redeem_single_amount(pool_info, amount, i)?;
 			let i_usize = i as usize;
 			let pool_size = pool_info.assets.len();
 			ensure!(dy >= min_redeem_amount, Error::<T>::RedeemUnderMin);
@@ -1100,7 +1100,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				balances,
 				total_supply,
 				burn_amount,
-			} = Self::get_redeem_multi_amount(&pool_info, &amounts)?;
+			} = Self::get_redeem_multi_amount(pool_info, &amounts)?;
 			let zero: T::Balance = Zero::zero();
 			ensure!(redeem_amount <= max_redeem_amount, Error::<T>::RedeemOverMax);
 			if fee_amount > zero {
@@ -1132,7 +1132,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				fee_amount,
 				balances,
 				total_supply,
-			} = Self::get_pending_fee_amount(&pool_info)?;
+			} = Self::get_pending_fee_amount(pool_info)?;
 			let zero: T::Balance = Zero::zero();
 			if fee_amount > zero {
 				let fee_recipient = pool_info.fee_recipient.clone();

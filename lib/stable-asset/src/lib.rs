@@ -71,6 +71,10 @@ pub mod traits {
 	use frame_support::dispatch::DispatchResult;
 	use sp_std::prelude::*;
 
+	pub trait ValidateAssetId<AssetId> {
+		fn validate(a: AssetId) -> bool;
+	}
+
 	pub trait StableAsset {
 		type AssetId;
 		type AtLeast64BitUnsigned;
@@ -148,7 +152,7 @@ pub mod traits {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{PoolId, PoolInfo, PoolTokenIndex};
-	use crate::traits::StableAsset;
+	use crate::traits::{StableAsset, ValidateAssetId};
 	use crate::weights::WeightInfo;
 	use frame_support::traits::tokens::fungibles;
 	use frame_support::{
@@ -193,6 +197,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type FeePrecision: Get<Self::AtLeast64BitUnsigned>;
 		type WeightInfo: WeightInfo;
+		type EnsurePoolAssetId: ValidateAssetId<Self::AssetId>;
 
 		/// The origin which may create pool or modify pool.
 		type ListingOrigin: EnsureOrigin<Self::Origin>;
@@ -261,6 +266,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		InconsistentStorage,
+		InvalidPoolAsset,
 		ArgumentsMismatch,
 		ArgumentsError,
 		PoolNotFound,
@@ -339,6 +345,7 @@ pub mod pallet {
 			fee_recipient: T::AccountId,
 		) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
+			ensure!(T::EnsurePoolAssetId::validate(pool_asset), Error::<T>::InvalidPoolAsset);
 			<Self as StableAsset>::create_pool(
 				pool_asset,
 				assets,

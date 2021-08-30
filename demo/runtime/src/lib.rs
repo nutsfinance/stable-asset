@@ -417,6 +417,13 @@ impl Transfer<AccountId> for FrameAssets {
 	}
 }
 
+pub struct EnsurePoolAssetId;
+impl nutsfinance_stable_asset::traits::ValidateAssetId<u32> for EnsurePoolAssetId {
+	fn validate(_: u32) -> bool {
+		true
+	}
+}
+
 /// Configure the pallet nutsfinance_stable_asset in pallets/nutsfinance_stable_asset.
 impl nutsfinance_stable_asset::Config for Runtime {
 	type Event = Event;
@@ -430,6 +437,7 @@ impl nutsfinance_stable_asset::Config for Runtime {
 	type FeePrecision = FeePrecision;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
+	type EnsurePoolAssetId = EnsurePoolAssetId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

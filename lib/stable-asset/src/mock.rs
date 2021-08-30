@@ -250,6 +250,13 @@ impl EnsureOrigin<Origin> for EnsureStableAsset {
 	}
 }
 
+pub struct EnsurePoolAssetId;
+impl crate::traits::ValidateAssetId<i64> for EnsurePoolAssetId {
+	fn validate(_: i64) -> bool {
+		true
+	}
+}
+
 impl stable_asset::Config for Test {
 	type Event = Event;
 	type AssetId = i64;
@@ -262,6 +269,7 @@ impl stable_asset::Config for Test {
 	type FeePrecision = FeePrecision;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
+	type EnsurePoolAssetId = EnsurePoolAssetId;
 }
 
 // Build genesis storage according to the mock runtime.

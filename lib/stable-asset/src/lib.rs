@@ -43,7 +43,7 @@ use sp_std::prelude::*;
 
 pub type PoolTokenIndex = u32;
 
-pub type PoolId = u32;
+pub type StableAssetPoolId = u32;
 
 const NUMBER_OF_ITERATIONS_TO_CONVERGE: i32 = 255; // the number of iterations to sum d and y
 
@@ -67,7 +67,7 @@ pub struct PoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId, BlockNumb
 }
 
 pub mod traits {
-	use crate::{PoolId, PoolInfo, PoolTokenIndex};
+	use crate::{PoolInfo, PoolTokenIndex, StableAssetPoolId};
 	use frame_support::dispatch::DispatchResult;
 	use sp_std::prelude::*;
 
@@ -82,10 +82,10 @@ pub mod traits {
 		type AccountId;
 		type BlockNumber;
 
-		fn pool_count() -> PoolId;
+		fn pool_count() -> StableAssetPoolId;
 
 		fn pool(
-			id: PoolId,
+			id: StableAssetPoolId,
 		) -> Option<
 			PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>,
 		>;
@@ -103,14 +103,14 @@ pub mod traits {
 
 		fn mint(
 			who: &Self::AccountId,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			amounts: Vec<Self::Balance>,
 			min_mint_amount: Self::Balance,
 		) -> DispatchResult;
 
 		fn swap(
 			who: &Self::AccountId,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			i: PoolTokenIndex,
 			j: PoolTokenIndex,
 			dx: Self::Balance,
@@ -119,14 +119,14 @@ pub mod traits {
 
 		fn redeem_proportion(
 			who: &Self::AccountId,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			amount: Self::Balance,
 			min_redeem_amounts: Vec<Self::Balance>,
 		) -> DispatchResult;
 
 		fn redeem_single(
 			who: &Self::AccountId,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			amount: Self::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: Self::Balance,
@@ -134,15 +134,15 @@ pub mod traits {
 
 		fn redeem_multi(
 			who: &Self::AccountId,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			amounts: Vec<Self::Balance>,
 			max_redeem_amount: Self::Balance,
 		) -> DispatchResult;
 
-		fn collect_fee(pool_id: PoolId) -> DispatchResult;
+		fn collect_fee(pool_id: StableAssetPoolId) -> DispatchResult;
 
 		fn modify_a(
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			a: Self::AtLeast64BitUnsigned,
 			future_a_block: Self::BlockNumber,
 		) -> DispatchResult;
@@ -151,7 +151,7 @@ pub mod traits {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{PoolId, PoolInfo, PoolTokenIndex};
+	use super::{PoolInfo, PoolTokenIndex, StableAssetPoolId};
 	use crate::traits::{StableAsset, ValidateAssetId};
 	use crate::weights::WeightInfo;
 	use frame_support::traits::tokens::fungibles;
@@ -209,14 +209,14 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn pool_count)]
-	pub type PoolCount<T: Config> = StorageValue<_, PoolId, ValueQuery>;
+	pub type PoolCount<T: Config> = StorageValue<_, StableAssetPoolId, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn pools)]
 	pub type Pools<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
-		PoolId,
+		StableAssetPoolId,
 		PoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 	>;
 
@@ -225,39 +225,39 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		CreatePool(
-			PoolId,       // created pool id
-			T::AccountId, // swap id
+			StableAssetPoolId, // created pool id
+			T::AccountId,      // swap id
 			T::AccountId,
 		), // pallet id
 		Minted(
-			T::AccountId,    // minter account id
-			PoolId,          // minted pool id
-			T::Balance,      // minted amount
-			Vec<T::Balance>, // mint input asset amounts
-			T::Balance,      // fee amount
+			T::AccountId,      // minter account id
+			StableAssetPoolId, // minted pool id
+			T::Balance,        // minted amount
+			Vec<T::Balance>,   // mint input asset amounts
+			T::Balance,        // fee amount
 		),
 		TokenSwapped(
-			T::AccountId, // swapper account id
-			PoolId,       // swapped pool id
-			T::AssetId,   // input token asset id
-			T::AssetId,   // output token asset id
-			T::Balance,   // input token amount
-			T::Balance,   // output token amount
+			T::AccountId,      // swapper account id
+			StableAssetPoolId, // swapped pool id
+			T::AssetId,        // input token asset id
+			T::AssetId,        // output token asset id
+			T::Balance,        // input token amount
+			T::Balance,        // output token amount
 		),
 		Redeemed(
-			T::AccountId,    // redeemer account id
-			PoolId,          // redeemed pool id
-			T::Balance,      // redeem amount
-			Vec<T::Balance>, // amount of underlying assets redeemed
-			T::Balance,      // fee amount
+			T::AccountId,      // redeemer account id
+			StableAssetPoolId, // redeemed pool id
+			T::Balance,        // redeem amount
+			Vec<T::Balance>,   // amount of underlying assets redeemed
+			T::Balance,        // fee amount
 		),
 		FeeCollected(
-			PoolId,       // fee collected pool id
-			T::AccountId, // fee recipient account id
-			T::Balance,   // collected fee amount
+			StableAssetPoolId, // fee collected pool id
+			T::AccountId,      // fee recipient account id
+			T::Balance,        // collected fee amount
 		),
 		AModified(
-			PoolId,                  // a modified pool id
+			StableAssetPoolId,       // a modified pool id
 			T::AtLeast64BitUnsigned, // new a value
 			T::BlockNumber,          // future time
 		),
@@ -362,7 +362,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn mint(
 			origin: OriginFor<T>,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			amounts: Vec<T::Balance>,
 			min_mint_amount: T::Balance,
 		) -> DispatchResult {
@@ -374,7 +374,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn swap(
 			origin: OriginFor<T>,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			i: PoolTokenIndex,
 			j: PoolTokenIndex,
 			dx: T::Balance,
@@ -388,7 +388,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn redeem_proportion(
 			origin: OriginFor<T>,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			amount: T::Balance,
 			min_redeem_amounts: Vec<T::Balance>,
 		) -> DispatchResult {
@@ -400,7 +400,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn redeem_single(
 			origin: OriginFor<T>,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			amount: T::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: T::Balance,
@@ -413,7 +413,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn redeem_multi(
 			origin: OriginFor<T>,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			amounts: Vec<T::Balance>,
 			max_redeem_amount: T::Balance,
 		) -> DispatchResult {
@@ -423,7 +423,7 @@ pub mod pallet {
 
 		#[pallet::weight(T::WeightInfo::collect_fee())]
 		#[transactional]
-		pub fn collect_fee(origin: OriginFor<T>, pool_id: PoolId) -> DispatchResult {
+		pub fn collect_fee(origin: OriginFor<T>, pool_id: StableAssetPoolId) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
 			<Self as StableAsset>::collect_fee(pool_id)
 		}
@@ -432,7 +432,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn modify_a(
 			origin: OriginFor<T>,
-			pool_id: PoolId,
+			pool_id: StableAssetPoolId,
 			a: T::AtLeast64BitUnsigned,
 			future_a_block: T::BlockNumber,
 		) -> DispatchResult {
@@ -900,12 +900,12 @@ impl<T: Config> StableAsset for Pallet<T> {
 	type AccountId = T::AccountId;
 	type BlockNumber = T::BlockNumber;
 
-	fn pool_count() -> PoolId {
+	fn pool_count() -> StableAssetPoolId {
 		PoolCount::<T>::get()
 	}
 
 	fn pool(
-		id: PoolId,
+		id: StableAssetPoolId,
 	) -> Option<PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>>
 	{
 		Pools::<T>::get(id)
@@ -963,7 +963,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 	fn mint(
 		who: &Self::AccountId,
-		pool_id: PoolId,
+		pool_id: StableAssetPoolId,
 		amounts: Vec<Self::Balance>,
 		min_mint_amount: Self::Balance,
 	) -> DispatchResult {
@@ -994,7 +994,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 	fn swap(
 		who: &Self::AccountId,
-		pool_id: PoolId,
+		pool_id: StableAssetPoolId,
 		i: PoolTokenIndex,
 		j: PoolTokenIndex,
 		dx: Self::Balance,
@@ -1021,7 +1021,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 	fn redeem_proportion(
 		who: &Self::AccountId,
-		pool_id: PoolId,
+		pool_id: StableAssetPoolId,
 		amount: Self::Balance,
 		min_redeem_amounts: Vec<Self::Balance>,
 	) -> DispatchResult {
@@ -1056,7 +1056,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 	fn redeem_single(
 		who: &Self::AccountId,
-		pool_id: PoolId,
+		pool_id: StableAssetPoolId,
 		amount: Self::Balance,
 		i: PoolTokenIndex,
 		min_redeem_amount: Self::Balance,
@@ -1095,7 +1095,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 	fn redeem_multi(
 		who: &Self::AccountId,
-		pool_id: PoolId,
+		pool_id: StableAssetPoolId,
 		amounts: Vec<Self::Balance>,
 		max_redeem_amount: Self::Balance,
 	) -> DispatchResult {
@@ -1132,7 +1132,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
-	fn collect_fee(pool_id: PoolId) -> DispatchResult {
+	fn collect_fee(pool_id: StableAssetPoolId) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let PendingFeeResult {
@@ -1152,7 +1152,11 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
-	fn modify_a(pool_id: PoolId, a: Self::AtLeast64BitUnsigned, future_a_block: T::BlockNumber) -> DispatchResult {
+	fn modify_a(
+		pool_id: StableAssetPoolId,
+		a: Self::AtLeast64BitUnsigned,
+		future_a_block: T::BlockNumber,
+	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(future_a_block > pool_info.a_block, Error::<T>::ArgumentsError);

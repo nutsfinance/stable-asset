@@ -37,6 +37,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::ensure;
 use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 use frame_support::traits::Get;
+use scale_info::TypeInfo;
 use sp_runtime::traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
 use sp_std::convert::TryFrom;
 use sp_std::prelude::*;
@@ -47,7 +48,7 @@ pub type StableAssetPoolId = u32;
 
 const NUMBER_OF_ITERATIONS_TO_CONVERGE: i32 = 255; // the number of iterations to sum d and y
 
-#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug, TypeInfo)]
 pub struct PoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId, BlockNumber> {
 	pool_asset: AssetId,
 	assets: Vec<AssetId>,
@@ -221,7 +222,6 @@ pub mod pallet {
 	>;
 
 	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId", T::Balance = "Balance", T::BlockNumber = "BlockNumber")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		CreatePool(

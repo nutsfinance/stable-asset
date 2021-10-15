@@ -21,7 +21,7 @@ use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
-	traits::{Currency, EnsureOrigin, OnUnbalanced},
+	traits::{Currency, EnsureOrigin, Everything, OnUnbalanced},
 	PalletId,
 };
 use frame_system as system;
@@ -56,7 +56,7 @@ parameter_types! {
 pub type AccountId = u64;
 
 impl system::Config for Test {
-	type BaseCallFilter = ();
+	type BaseCallFilter = Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();

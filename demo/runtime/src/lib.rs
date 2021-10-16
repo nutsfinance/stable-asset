@@ -15,9 +15,7 @@ use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthority
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::traits::AccountIdConversion;
-use sp_runtime::traits::Dispatchable;
-use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify};
+use sp_runtime::traits::{Everything, AccountIdConversion, Dispatchable, AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify};
 use sp_runtime::MultiAddress;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
@@ -154,7 +152,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = ();
+	type BaseCallFilter = Everything;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = BlockWeights;
 	/// The maximum length of a block (in bytes).

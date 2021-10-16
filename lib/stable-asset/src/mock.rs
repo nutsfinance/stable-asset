@@ -17,13 +17,14 @@
 
 use crate as stable_asset;
 use frame_support::{
+	dispatch::{DispatchError, DispatchResult},
+	parameter_types,
 	traits::{
-		Currency, EnsureOrigin, OnUnbalanced, Everything,
 		fungibles::{Inspect, Mutate, Transfer},
 		tokens::{DepositConsequence, WithdrawConsequence},
+		Currency, EnsureOrigin, Everything, OnUnbalanced,
 	},
-	dispatch::{DispatchError, DispatchResult},
-	parameter_types, PalletId,
+	PalletId,
 };
 use frame_system::RawOrigin;
 use sp_core::H256;
@@ -274,5 +275,8 @@ impl stable_asset::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	frame_system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+	frame_system::GenesisConfig::default()
+		.build_storage::<Test>()
+		.unwrap()
+		.into()
 }

@@ -16,15 +16,16 @@
 // limitations under the License.
 
 use crate as stable_asset;
-use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
-use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
-	traits::{Currency, EnsureOrigin, OnUnbalanced},
+	traits::{
+		fungibles::{Inspect, Mutate, Transfer},
+		tokens::{DepositConsequence, WithdrawConsequence},
+		Currency, EnsureOrigin, Everything, OnUnbalanced,
+	},
 	PalletId,
 };
-use frame_system as system;
 use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::{
@@ -55,8 +56,8 @@ parameter_types! {
 
 pub type AccountId = u64;
 
-impl system::Config for Test {
-	type BaseCallFilter = ();
+impl frame_system::Config for Test {
+	type BaseCallFilter = Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
@@ -274,5 +275,8 @@ impl stable_asset::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+	frame_system::GenesisConfig::default()
+		.build_storage::<Test>()
+		.unwrap()
+		.into()
 }

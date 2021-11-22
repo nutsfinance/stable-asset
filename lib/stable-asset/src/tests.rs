@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{mock::*, Error, PoolInfo};
+use crate::{mock::*, Error, StableAssetPoolInfo};
 use frame_support::assert_noop;
 use frame_support::assert_ok;
 use frame_support::dispatch::DispatchError;
@@ -66,7 +66,7 @@ fn create_pool_successful() {
 		));
 		assert_eq!(
 			StableAsset::pools(0),
-			Some(PoolInfo {
+			Some(StableAssetPoolInfo {
 				pool_asset: 1,
 				assets: vec![1, 2],
 				precisions: vec![1u128, 1u128],
@@ -137,7 +137,7 @@ fn mint_successful_equal_amounts() {
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_eq!(
 					StableAsset::pools(0),
-					Some(PoolInfo {
+					Some(StableAssetPoolInfo {
 						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
@@ -178,7 +178,7 @@ fn mint_successful_different_amounts() {
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_eq!(
 					StableAsset::pools(0),
-					Some(PoolInfo {
+					Some(StableAssetPoolInfo {
 						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
@@ -312,7 +312,7 @@ fn swap_successful() {
 				assert_ok!(StableAsset::swap(Origin::signed(1), 0, 0, 1, 5000000u128, 0));
 				assert_eq!(
 					StableAsset::pools(0),
-					Some(PoolInfo {
+					Some(StableAssetPoolInfo {
 						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
@@ -488,7 +488,7 @@ fn redeem_proportion_successful() {
 				));
 				assert_eq!(
 					StableAsset::pools(0),
-					Some(PoolInfo {
+					Some(StableAssetPoolInfo {
 						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
@@ -644,7 +644,7 @@ fn redeem_single_successful() {
 				));
 				assert_eq!(
 					StableAsset::pools(0),
-					Some(PoolInfo {
+					Some(StableAssetPoolInfo {
 						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
@@ -789,7 +789,7 @@ fn redeem_multi_successful() {
 				));
 				assert_eq!(
 					StableAsset::pools(0),
-					Some(PoolInfo {
+					Some(StableAssetPoolInfo {
 						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],
@@ -899,7 +899,7 @@ fn collect_fee_successful() {
 				assert_ok!(StableAsset::collect_fee(Origin::signed(1), 0));
 				assert_eq!(
 					StableAsset::pools(0),
-					Some(PoolInfo {
+					Some(StableAssetPoolInfo {
 						pool_asset,
 						assets: vec![coin0, coin1],
 						precisions: vec![10000000000u128, 10000000000u128],

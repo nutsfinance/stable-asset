@@ -49,7 +49,7 @@ pub type StableAssetPoolId = u32;
 const NUMBER_OF_ITERATIONS_TO_CONVERGE: i32 = 255; // the number of iterations to sum d and y
 
 #[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug, TypeInfo)]
-pub struct PoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId, BlockNumber> {
+pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId, BlockNumber> {
 	pool_asset: AssetId,
 	assets: Vec<AssetId>,
 	precisions: Vec<AtLeast64BitUnsigned>,
@@ -68,7 +68,7 @@ pub struct PoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId, BlockNumb
 }
 
 pub mod traits {
-	use crate::{PoolInfo, PoolTokenIndex, StableAssetPoolId};
+	use crate::{StableAssetPoolInfo, PoolTokenIndex, StableAssetPoolId};
 	use frame_support::dispatch::DispatchResult;
 	use sp_std::prelude::*;
 
@@ -88,7 +88,7 @@ pub mod traits {
 		fn pool(
 			id: StableAssetPoolId,
 		) -> Option<
-			PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>,
+			StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>,
 		>;
 
 		fn create_pool(
@@ -152,7 +152,7 @@ pub mod traits {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{PoolInfo, PoolTokenIndex, StableAssetPoolId};
+	use super::{StableAssetPoolInfo, PoolTokenIndex, StableAssetPoolId};
 	use crate::traits::{StableAsset, ValidateAssetId};
 	use crate::weights::WeightInfo;
 	use frame_support::traits::tokens::fungibles;
@@ -218,7 +218,7 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		StableAssetPoolId,
-		PoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 	>;
 
 	#[pallet::event]
@@ -571,7 +571,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_mint_amount(
-		pool_info: &PoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 		amounts_bal: &[T::Balance],
 	) -> Result<MintResult<T>, Error<T>> {
 		if pool_info.balances.len() != amounts_bal.len() {
@@ -630,7 +630,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_swap_amount(
-		pool_info: &PoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 		input_index: PoolTokenIndex,
 		output_index: PoolTokenIndex,
 		dx_bal: T::Balance,
@@ -695,7 +695,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_redeem_proportion_amount(
-		pool_info: &PoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 		amount_bal: T::Balance,
 	) -> Result<RedeemProportionResult<T>, Error<T>> {
 		let mut amount: T::AtLeast64BitUnsigned = amount_bal.into();
@@ -745,7 +745,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_redeem_single_amount(
-		pool_info: &PoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 		amount_bal: T::Balance,
 		i: PoolTokenIndex,
 	) -> Result<RedeemSingleResult<T>, Error<T>> {
@@ -806,7 +806,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_redeem_multi_amount(
-		pool_info: &PoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 		amounts: &[T::Balance],
 	) -> Result<RedeemMultiResult<T>, Error<T>> {
 		if amounts.len() != pool_info.balances.len() {
@@ -863,7 +863,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_pending_fee_amount(
-		pool_info: &PoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 	) -> Result<PendingFeeResult<T>, Error<T>> {
 		let mut balances: Vec<T::AtLeast64BitUnsigned> =
 			Self::convert_vec_balance_to_number(pool_info.balances.clone());
@@ -906,7 +906,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 	fn pool(
 		id: StableAssetPoolId,
-	) -> Option<PoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>>
+	) -> Option<StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>>
 	{
 		Pools::<T>::get(id)
 	}
@@ -933,7 +933,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				let balances = sp_std::vec![Zero::zero(); assets.len()];
 				frame_system::Pallet::<T>::inc_providers(&swap_id);
 				let current_block = frame_system::Pallet::<T>::block_number();
-				*maybe_pool_info = Some(PoolInfo {
+				*maybe_pool_info = Some(StableAssetPoolInfo {
 					pool_asset,
 					assets,
 					precisions,

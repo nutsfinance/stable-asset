@@ -68,7 +68,7 @@ pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId
 }
 
 pub mod traits {
-	use crate::{StableAssetPoolInfo, PoolTokenIndex, StableAssetPoolId};
+	use crate::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
 	use frame_support::dispatch::DispatchResult;
 	use sp_std::prelude::*;
 
@@ -88,7 +88,13 @@ pub mod traits {
 		fn pool(
 			id: StableAssetPoolId,
 		) -> Option<
-			StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>,
+			StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
 		>;
 
 		fn create_pool(
@@ -152,7 +158,7 @@ pub mod traits {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{StableAssetPoolInfo, PoolTokenIndex, StableAssetPoolId};
+	use super::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
 	use crate::traits::{StableAsset, ValidateAssetId};
 	use crate::weights::WeightInfo;
 	use frame_support::traits::tokens::fungibles;
@@ -906,8 +912,15 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 	fn pool(
 		id: StableAssetPoolId,
-	) -> Option<StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>>
-	{
+	) -> Option<
+		StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+	> {
 		Pools::<T>::get(id)
 	}
 

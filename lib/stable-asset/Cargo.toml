@@ -1,7 +1,7 @@
 [package]
 authors = ["nuts.finance"]
 description = "Substrate-based runtime version of NUTS stable assets."
-edition = "2018"
+edition = "2021"
 name = "nutsfinance-stable-asset"
 version = "0.1.0"
 license = "Apache-2.0"

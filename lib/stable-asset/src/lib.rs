@@ -1063,8 +1063,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 					fee_recipient,
 					account_id: swap_id.clone(),
 					pallet_id: T::PalletId::get().into_account(),
-					income_recipient: income_recipient,
-					precision: precision,
+					income_recipient,
+					precision,
 				});
 
 				Ok(())

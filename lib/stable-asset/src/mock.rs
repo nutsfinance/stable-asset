@@ -100,7 +100,6 @@ impl pallet_balances::Config for Test {
 
 parameter_types! {
 	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
-	pub Precision: u128 = 1000000000000000000u128;
 	pub FeePrecision: u128 = 10000000000u128;
 }
 
@@ -266,7 +265,6 @@ impl stable_asset::Config for Test {
 	type PalletId = StableAssetPalletId;
 
 	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
-	type Precision = Precision;
 	type FeePrecision = FeePrecision;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;

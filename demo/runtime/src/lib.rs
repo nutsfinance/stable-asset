@@ -16,8 +16,8 @@ use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::traits::{
-	AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Dispatchable, Everything, IdentifyAccount,
-	NumberFor, Verify,
+	AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Dispatchable, IdentifyAccount, NumberFor,
+	Verify,
 };
 use sp_runtime::MultiAddress;
 use sp_runtime::{
@@ -37,7 +37,7 @@ pub use frame_support::{
 	construct_runtime,
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
-	traits::{Currency, EnsureOrigin, KeyOwnerProofSystem, OnUnbalanced, Randomness},
+	traits::{Currency, EnsureOrigin, Everything, KeyOwnerProofSystem, OnUnbalanced, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		IdentityFee, Weight,
@@ -204,8 +204,14 @@ impl frame_system::Config for Runtime {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const MaxAuthorities: u32 = 32;
+}
+
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
+	type DisabledValidators = ();
+	type MaxAuthorities = MaxAuthorities;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -222,6 +228,7 @@ impl pallet_grandpa::Config for Runtime {
 	type HandleEquivocation = ();
 
 	type WeightInfo = ();
+	type MaxAuthorities = MaxAuthorities;
 }
 
 parameter_types! {
@@ -257,11 +264,13 @@ impl pallet_balances::Config for Runtime {
 
 parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
+	pub OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
 	type TransactionByteFee = TransactionByteFee;
+	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
 	type FeeMultiplierUpdate = ();
 }
@@ -319,7 +328,6 @@ impl pallet_assets::Config for Runtime {
 
 parameter_types! {
 	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
-	pub Precision: u128 = 1000000000000000000u128;
 	pub FeePrecision: u128 = 10000000000u128;
 }
 
@@ -349,7 +357,11 @@ impl Mutate<AccountId> for FrameAssets {
 
 		let multi_address: MultiAddress<AccountId, ()> = MultiAddress::Id(dest.clone());
 
-		let call = Call::Assets(AssetsCall::mint(asset, multi_address, amount));
+		let call = Call::Assets(AssetsCall::mint {
+			id: asset,
+			beneficiary: multi_address,
+			amount,
+		});
 		call.dispatch(origin.clone()).map_err(|x| x.error)?;
 
 		Ok(())
@@ -363,7 +375,11 @@ impl Mutate<AccountId> for FrameAssets {
 
 		let multi_address: MultiAddress<AccountId, ()> = MultiAddress::Id(dest.clone());
 
-		let call = Call::Assets(AssetsCall::burn(asset, multi_address, amount));
+		let call = Call::Assets(AssetsCall::burn {
+			id: asset,
+			who: multi_address,
+			amount,
+		});
 		call.dispatch(origin.clone()).map_err(|x| x.error)?;
 
 		Ok(amount)
@@ -411,7 +427,11 @@ impl Transfer<AccountId> for FrameAssets {
 
 		let multi_address: MultiAddress<AccountId, ()> = MultiAddress::Id(dest.clone());
 
-		let call = Call::Assets(AssetsCall::transfer(asset, multi_address, amount));
+		let call = Call::Assets(AssetsCall::transfer {
+			id: asset,
+			target: multi_address,
+			amount,
+		});
 		call.dispatch(origin.clone()).map_err(|x| x.error)?;
 
 		Ok(amount)
@@ -434,7 +454,6 @@ impl nutsfinance_stable_asset::Config for Runtime {
 	type PalletId = StableAssetPalletId;
 
 	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
-	type Precision = Precision;
 	type FeePrecision = FeePrecision;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
@@ -506,7 +525,7 @@ impl_runtime_apis! {
 
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
-			Runtime::metadata().into()
+			OpaqueMetadata::new(Runtime::metadata().into())
 		}
 	}
 
@@ -535,8 +554,9 @@ impl_runtime_apis! {
 		fn validate_transaction(
 			source: TransactionSource,
 			tx: <Block as BlockT>::Extrinsic,
+			block_hash: <Block as BlockT>::Hash,
 		) -> TransactionValidity {
-			Executive::validate_transaction(source, tx)
+			Executive::validate_transaction(source, tx, block_hash)
 		}
 	}
 
@@ -552,7 +572,7 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuraId> {
-			Aura::authorities()
+			Aura::authorities().into_inner()
 		}
 	}
 
@@ -571,6 +591,10 @@ impl_runtime_apis! {
 	impl fg_primitives::GrandpaApi<Block> for Runtime {
 		fn grandpa_authorities() -> GrandpaAuthorityList {
 			Grandpa::grandpa_authorities()
+		}
+
+		fn current_set_id() -> fg_primitives::SetId {
+			Grandpa::current_set_id()
 		}
 
 		fn submit_report_equivocation_unsigned_extrinsic(

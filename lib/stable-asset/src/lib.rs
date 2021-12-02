@@ -39,7 +39,6 @@ use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 use frame_support::traits::Get;
 use scale_info::TypeInfo;
 use sp_runtime::traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
-use sp_std::convert::TryFrom;
 use sp_std::prelude::*;
 
 pub type PoolTokenIndex = u32;
@@ -203,7 +202,6 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
-	use sp_std::convert::{From, TryFrom};
 	use sp_std::prelude::*;
 
 	#[pallet::config]

@@ -2,7 +2,7 @@
 name = "node-runtime"
 version = "0.1.0"
 authors = ["nuts.finance"]
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/nutsfinance/stable-asset"
 
@@ -11,6 +11,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 
 pallet-aura = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
 pallet-assets = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
@@ -36,7 +37,7 @@ sp-std = { default-features = false, git = 'https://github.com/paritytech/substr
 sp-transaction-pool = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
 sp-version = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
 sp-io = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
-orml-benchmarking = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", rev = "fa64469d84133f7285cea3a5ed1c201926bc364e", default-features = false, optional = true }
+orml-benchmarking = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", rev = "5fb024c074a6a367e7252c52e0f09372e1c69c18", default-features = false, optional = true }
 
 # Used for runtime benchmarking
 frame-benchmarking = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044", optional = true }
@@ -56,6 +57,7 @@ substrate-wasm-builder = { git = 'https://github.com/paritytech/substrate.git', 
 default = ["std"]
 std = [
 	"codec/std",
+	"scale-info/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"pallet-aura/std",

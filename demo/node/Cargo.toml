@@ -3,7 +3,7 @@ name = "node"
 version = "0.1.0"
 authors = ["nuts.finance"]
 description = "Example node to run stable-asset pallet"
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 build = "build.rs"
 repository = "https://github.com/nutsfinance/stable-asset"
@@ -25,7 +25,7 @@ sc-telemetry = { git = 'https://github.com/paritytech/substrate.git', rev = "d76
 sc-keystore = { git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
 sp-inherents = { git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
 sc-transaction-pool = { git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
-sp-transaction-pool = { git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
+sc-transaction-pool-api = { git = "https://github.com/paritytech/substrate", rev = "d76f39995315ec36980908e4b99709bd14927044" }
 sc-consensus-aura = {git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
 sp-consensus-aura = {git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }
 sp-consensus = {git = 'https://github.com/paritytech/substrate.git', rev = "d76f39995315ec36980908e4b99709bd14927044" }

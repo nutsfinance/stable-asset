@@ -150,11 +150,36 @@ pub mod traits {
 			max_redeem_amount: Self::Balance,
 		) -> DispatchResult;
 
-		fn collect_fee(pool_id: StableAssetPoolId, pool_info: &mut StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>) -> DispatchResult;
+		fn collect_fee(
+			pool_id: StableAssetPoolId,
+			pool_info: &mut StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		) -> DispatchResult;
 
-		fn update_balance(pool_info: &mut StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>) -> DispatchResult;
+		fn update_balance(
+			pool_info: &mut StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		) -> DispatchResult;
 
-		fn collect_income(pool_info: &mut StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>) -> DispatchResult;
+		fn collect_income(
+			pool_info: &mut StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		) -> DispatchResult;
 
 		fn modify_a(
 			pool_id: StableAssetPoolId,
@@ -927,7 +952,15 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Pools::<T>::get(id)
 	}
 
-	fn update_balance(pool_info: &mut StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>) -> DispatchResult {
+	fn update_balance(
+		pool_info: &mut StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+	) -> DispatchResult {
 		for (i, balance) in pool_info.balances.iter_mut().enumerate() {
 			let balance_of: Self::AtLeast64BitUnsigned =
 				T::Assets::balance(pool_info.assets[i], &pool_info.account_id).into();
@@ -939,17 +972,25 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Ok(())
 	}
 
-	fn collect_income(pool_info: &mut StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>) -> DispatchResult {
+	fn collect_income(
+		pool_info: &mut StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+	) -> DispatchResult {
 		let a: T::AtLeast64BitUnsigned = Self::get_a(
 			pool_info.a,
 			pool_info.a_block,
 			pool_info.future_a,
 			pool_info.future_a_block,
-		).ok_or(Error::<T>::Math)?;
+		)
+		.ok_or(Error::<T>::Math)?;
 		let old_d: T::AtLeast64BitUnsigned = pool_info.total_supply.into();
 		Self::update_balance(pool_info)?;
-		let balances: Vec<T::AtLeast64BitUnsigned> =
-		  Self::convert_vec_balance_to_number(pool_info.balances.clone());
+		let balances: Vec<T::AtLeast64BitUnsigned> = Self::convert_vec_balance_to_number(pool_info.balances.clone());
 		let new_d: T::AtLeast64BitUnsigned = Self::get_d(&balances, a).ok_or(Error::<T>::Math)?;
 		if new_d > old_d {
 			T::Assets::mint_into(pool_info.pool_asset, &pool_info.income_recipient, new_d.into())?;
@@ -958,7 +999,16 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Ok(())
 	}
 
-	fn collect_fee(pool_id: StableAssetPoolId, pool_info: &mut StableAssetPoolInfo<Self::AssetId, Self::AtLeast64BitUnsigned, Self::Balance, Self::AccountId, Self::BlockNumber>) -> DispatchResult {
+	fn collect_fee(
+		pool_id: StableAssetPoolId,
+		pool_info: &mut StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+	) -> DispatchResult {
 		let PendingFeeResult {
 			fee_amount,
 			balances,

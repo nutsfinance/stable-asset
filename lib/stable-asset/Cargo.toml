@@ -12,17 +12,18 @@ readme = "README.md"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "2.3.1", default-features = false, features = ["derive"] }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 
 [dependencies.frame-support]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "d76f39995315ec36980908e4b99709bd14927044"
 
 [dependencies.frame-system]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "d76f39995315ec36980908e4b99709bd14927044"
 
 [dev-dependencies]
 serde = { version = "1.0.101" }
@@ -30,27 +31,27 @@ serde = { version = "1.0.101" }
 [dev-dependencies.sp-core]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "d76f39995315ec36980908e4b99709bd14927044"
 
 [dev-dependencies.sp-io]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "d76f39995315ec36980908e4b99709bd14927044"
 
 [dependencies.sp-std]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "d76f39995315ec36980908e4b99709bd14927044"
 
 [dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "d76f39995315ec36980908e4b99709bd14927044"
 
 [dev-dependencies.pallet-balances]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "1d7f6e12c651d776fc0dc1adefd007bb60f60b63"
+rev = "d76f39995315ec36980908e4b99709bd14927044"
 
 [features]
 default = ["std"]
@@ -58,6 +59,14 @@ std = [
 	"codec/std",
 	"frame-support/std",
 	"frame-system/std",
-  "sp-std/std",
+	"scale-info/std",
+	"sp-std/std",
+	"sp-runtime/std",
+]
+runtime-benchmarks = [
+	"codec/std",
+	"frame-support/std",
+	"frame-system/std",
+	"sp-std/std",
 	"sp-runtime/std",
 ]

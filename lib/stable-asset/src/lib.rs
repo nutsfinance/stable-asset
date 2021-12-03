@@ -64,7 +64,7 @@ pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId
 	fee_recipient: AccountId,
 	account_id: AccountId,
 	pallet_id: AccountId,
-	income_recipient: AccountId,
+	yield_recipient: AccountId,
 	precision: AtLeast64BitUnsigned,
 }
 
@@ -107,7 +107,7 @@ pub mod traits {
 			redeem_fee: Self::AtLeast64BitUnsigned,
 			initial_a: Self::AtLeast64BitUnsigned,
 			fee_recipient: Self::AccountId,
-			income_recipient: Self::AccountId,
+			yield_recipient: Self::AccountId,
 			precision: Self::AtLeast64BitUnsigned,
 		) -> DispatchResult;
 
@@ -378,7 +378,7 @@ pub mod pallet {
 			redeem_fee: T::AtLeast64BitUnsigned,
 			initial_a: T::AtLeast64BitUnsigned,
 			fee_recipient: T::AccountId,
-			income_recipient: T::AccountId,
+			yield_recipient: T::AccountId,
 			precision: T::AtLeast64BitUnsigned,
 		) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
@@ -392,7 +392,7 @@ pub mod pallet {
 				redeem_fee,
 				initial_a,
 				fee_recipient,
-				income_recipient,
+				yield_recipient,
 				precision,
 			)
 		}
@@ -991,7 +991,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		let balances: Vec<T::AtLeast64BitUnsigned> = Self::convert_vec_balance_to_number(pool_info.balances.clone());
 		let new_d: T::AtLeast64BitUnsigned = Self::get_d(&balances, a).ok_or(Error::<T>::Math)?;
 		if new_d > old_d {
-			T::Assets::mint_into(pool_info.pool_asset, &pool_info.income_recipient, new_d.into())?;
+			T::Assets::mint_into(pool_info.pool_asset, &pool_info.yield_recipient, new_d.into())?;
 			pool_info.total_supply = new_d.into();
 		}
 		Ok(())
@@ -1032,7 +1032,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		redeem_fee: Self::AtLeast64BitUnsigned,
 		initial_a: Self::AtLeast64BitUnsigned,
 		fee_recipient: Self::AccountId,
-		income_recipient: Self::AccountId,
+		yield_recipient: Self::AccountId,
 		precision: Self::AtLeast64BitUnsigned,
 	) -> DispatchResult {
 		ensure!(assets.len() > 1, Error::<T>::ArgumentsError);
@@ -1063,7 +1063,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 					fee_recipient,
 					account_id: swap_id.clone(),
 					pallet_id: T::PalletId::get().into_account(),
-					income_recipient,
+					yield_recipient,
 					precision,
 				});
 

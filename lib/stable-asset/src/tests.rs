@@ -86,7 +86,7 @@ fn create_pool_successful() {
 				fee_recipient: 1,
 				account_id: 8319403528785522541u64,
 				pallet_id: 8319403528785522541u64,
-				income_recipient: 1,
+				yield_recipient: 1,
 				precision: 1000000000000000000u128,
 			})
 		);
@@ -163,7 +163,7 @@ fn mint_successful_equal_amounts() {
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						income_recipient: 1,
+						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
@@ -206,7 +206,7 @@ fn mint_successful_different_amounts() {
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						income_recipient: 1,
+						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
@@ -342,7 +342,7 @@ fn swap_successful() {
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						income_recipient: 1,
+						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
@@ -520,7 +520,7 @@ fn redeem_proportion_successful() {
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						income_recipient: 1,
+						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
@@ -678,7 +678,7 @@ fn redeem_single_successful() {
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						income_recipient: 1,
+						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
@@ -825,7 +825,7 @@ fn redeem_multi_successful() {
 						fee_recipient: 2,
 						account_id: swap_id,
 						pallet_id: swap_id,
-						income_recipient: 1,
+						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);

@@ -400,7 +400,7 @@ pub mod pallet {
 			)
 		}
 
-		#[pallet::weight(T::WeightInfo::mint())]
+		#[pallet::weight(T::WeightInfo::mint(amounts.len() as u32))]
 		#[transactional]
 		pub fn mint(
 			origin: OriginFor<T>,
@@ -426,7 +426,7 @@ pub mod pallet {
 			<Self as StableAsset>::swap(&who, pool_id, i, j, dx, min_dy)
 		}
 
-		#[pallet::weight(T::WeightInfo::redeem_proportion())]
+		#[pallet::weight(T::WeightInfo::redeem_proportion(min_redeem_amounts.len() as u32))]
 		#[transactional]
 		pub fn redeem_proportion(
 			origin: OriginFor<T>,
@@ -451,7 +451,7 @@ pub mod pallet {
 			<Self as StableAsset>::redeem_single(&who, pool_id, amount, i, min_redeem_amount)
 		}
 
-		#[pallet::weight(T::WeightInfo::redeem_multi())]
+		#[pallet::weight(T::WeightInfo::redeem_multi(amounts.len() as u32))]
 		#[transactional]
 		pub fn redeem_multi(
 			origin: OriginFor<T>,

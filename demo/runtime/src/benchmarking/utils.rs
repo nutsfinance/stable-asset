@@ -25,8 +25,7 @@ pub fn initialize_assets(
 	tester: AccountId,
 	fee_recipient: AccountId,
 	pool_asset: AssetId,
-	asset_a: AssetId,
-	asset_b: AssetId,
+	assets: Vec<AssetId>,
 ) -> DispatchResult {
 	frame_system::Pallet::<Runtime>::inc_providers(&tester);
 	frame_system::Pallet::<Runtime>::inc_providers(&fee_recipient);
@@ -36,30 +35,20 @@ pub fn initialize_assets(
 		sp_runtime::MultiAddress::Id(tester.clone()),
 		1,
 	)?;
-	let _ = Assets::create(
-		RawOrigin::Signed(tester.clone()).into(),
-		asset_a,
-		sp_runtime::MultiAddress::Id(tester.clone()),
-		1,
-	)?;
-	let _ = Assets::create(
-		RawOrigin::Signed(tester.clone()).into(),
-		asset_b,
-		sp_runtime::MultiAddress::Id(tester.clone()),
-		1,
-	)?;
-	let _ = Assets::mint(
-		RawOrigin::Signed(tester.clone()).into(),
-		asset_a,
-		sp_runtime::MultiAddress::Id(tester.clone()),
-		100000000,
-	)?;
-	let _ = Assets::mint(
-		RawOrigin::Signed(tester.clone()).into(),
-		asset_b,
-		sp_runtime::MultiAddress::Id(tester.clone()),
-		100000000,
-	)?;
+	for asset in &assets {
+		let _ = Assets::create(
+			RawOrigin::Signed(tester.clone()).into(),
+			*asset,
+			sp_runtime::MultiAddress::Id(tester.clone()),
+			1,
+		)?;
+		let _ = Assets::mint(
+			RawOrigin::Signed(tester.clone()).into(),
+			*asset,
+			sp_runtime::MultiAddress::Id(tester.clone()),
+			100000000,
+		)?;
+	}
 	let pallet_id: AccountId = StableAssetPalletId::get().into_account();
 	let _ = Assets::set_team(
 		RawOrigin::Signed(tester.clone()).into(),

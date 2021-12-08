@@ -232,6 +232,8 @@ pub mod pallet {
 		type PalletId: Get<PalletId>;
 		#[pallet::constant]
 		type FeePrecision: Get<Self::AtLeast64BitUnsigned>;
+		#[pallet::constant]
+		type PoolAssetLimit: Get<u32>;
 		type WeightInfo: WeightInfo;
 		type EnsurePoolAssetId: ValidateAssetId<Self::AssetId>;
 
@@ -1036,7 +1038,10 @@ impl<T: Config> StableAsset for Pallet<T> {
 		precision: Self::AtLeast64BitUnsigned,
 	) -> DispatchResult {
 		ensure!(assets.len() > 1, Error::<T>::ArgumentsError);
-		ensure!(assets.len() <= 3, Error::<T>::ArgumentsError);
+		ensure!(
+			assets.len() <= T::PoolAssetLimit::get().try_into().unwrap(),
+			Error::<T>::ArgumentsError
+		);
 		ensure!(assets.len() == precisions.len(), Error::<T>::ArgumentsMismatch);
 		PoolCount::<T>::try_mutate(|pool_count| -> DispatchResult {
 			let pool_id = *pool_count;

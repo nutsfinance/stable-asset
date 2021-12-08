@@ -59,3 +59,6 @@ substrate-build-script-utils = { git = 'https://github.com/paritytech/substrate.
 
 [features]
 default = []
+runtime-benchmarks = [
+	"node-runtime/runtime-benchmarks",
+]

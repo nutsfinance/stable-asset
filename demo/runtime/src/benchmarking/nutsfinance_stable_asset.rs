@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{AccountId, Runtime, StableAsset};
+use crate::{AccountId, PoolAssetLimit, Runtime, StableAsset};
 
 use crate::benchmarking::utils::initialize_assets;
 use frame_benchmarking::{account, whitelisted_caller};
@@ -35,123 +35,140 @@ runtime_benchmarks! {
 		let tester: AccountId = whitelisted_caller();
 		let pool_asset = POOL_ASSET;
 		let assets = vec![ASSET_A, ASSET_B];
-		let precisions = vec![10000000000u128, 10000000000u128];
+		let precisions = vec![1u128, 1u128];
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
 		let intial_a = 100u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
-	}: _(RawOrigin::Signed(tester), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient)
+		let yield_recipient: AccountId = account("yield", 1, SEED);
+	}: _(RawOrigin::Signed(tester), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient, yield_recipient, 1000000000000000000u128)
 
 	modify_a {
 		let tester: AccountId = whitelisted_caller();
 		let pool_asset = POOL_ASSET;
 		let assets = vec![ASSET_A, ASSET_B];
-		let precisions = vec![10000000000u128, 10000000000u128];
+		let precisions = vec![1u128, 1u128];
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
 		let intial_a = 100u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
-		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone());
+		let yield_recipient: AccountId = account("yield", 1, SEED);
+		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
 		let pool_id = StableAsset::pool_count() - 1;
 	}: _(RawOrigin::Signed(tester), pool_id, 1000u128, 2629112370)
 
 	mint {
 		let tester: AccountId = whitelisted_caller();
+		let u in 2 .. PoolAssetLimit::get() as u32;
 		let pool_asset = POOL_ASSET;
-		let assets = vec![ASSET_A, ASSET_B];
-		let precisions = vec![10000000000u128, 10000000000u128];
+		let mut assets = vec![];
+		let mut precisions = vec![];
+		let mut mint_args = vec![];
+		for i in 0 .. u {
+			assets.push(i + 1);
+			precisions.push(1u128);
+			mint_args.push(10000000u128);
+		}
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
 		let intial_a = 100u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
-		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone());
+		let yield_recipient: AccountId = account("yield", 1, SEED);
+		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets.clone(), precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient, 1000000000000000000u128);
 		let pool_id = StableAsset::pool_count() - 1;
-		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, ASSET_A, ASSET_B)?;
-	}: _(RawOrigin::Signed(tester), pool_id, vec![10000000u128, 20000000u128], 0u128)
+		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, assets.clone())?;
+	}: _(RawOrigin::Signed(tester), pool_id, mint_args, 0u128)
 
 	swap {
 		let tester: AccountId = whitelisted_caller();
 		let pool_asset = POOL_ASSET;
 		let assets = vec![ASSET_A, ASSET_B];
-		let precisions = vec![10000000000u128, 10000000000u128];
+		let precisions = vec![1u128, 1u128];
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
 		let intial_a = 100u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
-		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone());
+		let yield_recipient: AccountId = account("yield", 1, SEED);
+		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
 		let pool_id = StableAsset::pool_count() - 1;
-		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, ASSET_A, ASSET_B)?;
+		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, vec![ASSET_A, ASSET_B])?;
 		let _ = StableAsset::mint(RawOrigin::Signed(tester.clone()).into(), pool_id, vec![10000000u128, 20000000u128], 0u128);
 	}: _(RawOrigin::Signed(tester), pool_id, 0, 1, 5000000u128, 0u128)
-
-	collect_fee {
-		let tester: AccountId = whitelisted_caller();
-		let pool_asset = POOL_ASSET;
-		let assets = vec![ASSET_A, ASSET_B];
-		let precisions = vec![10000000000u128, 10000000000u128];
-		let mint_fee = 10000000u128;
-		let swap_fee = 20000000u128;
-		let redeem_fee = 50000000u128;
-		let intial_a = 100u128;
-		let fee_recipient: AccountId = account("fee", 0, SEED);
-		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone());
-		let pool_id = StableAsset::pool_count() - 1;
-		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, ASSET_A, ASSET_B)?;
-		let _ = StableAsset::mint(RawOrigin::Signed(tester.clone()).into(), pool_id, vec![10000000u128, 20000000u128], 0u128);
-		let _ = StableAsset::swap(RawOrigin::Signed(tester.clone()).into(), pool_id, 0, 1, 5000000u128, 0u128);
-	}: _(RawOrigin::Signed(tester), pool_id)
 
 	redeem_proportion {
 		let tester: AccountId = whitelisted_caller();
 		let pool_asset = POOL_ASSET;
-		let assets = vec![ASSET_A, ASSET_B];
-		let precisions = vec![10000000000u128, 10000000000u128];
+		let u in 2 .. PoolAssetLimit::get() as u32;
+		let mut assets = vec![];
+		let mut precisions = vec![];
+		let mut mint_args = vec![];
+		let mut redeem_args = vec![];
+		for i in 0 .. u {
+			assets.push(i + 1);
+			precisions.push(1u128);
+			let multiple: u128 = (i + 1).into();
+			mint_args.push(10000000u128 * multiple);
+			redeem_args.push(0u128);
+		}
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
 		let intial_a = 100u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
-		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone());
+		let yield_recipient: AccountId = account("yield", 1, SEED);
+		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets.clone(), precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
 		let pool_id = StableAsset::pool_count() - 1;
-		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, ASSET_A, ASSET_B)?;
-		let _ = StableAsset::mint(RawOrigin::Signed(tester.clone()).into(), pool_id, vec![10000000u128, 20000000u128], 0u128);
-	}: _(RawOrigin::Signed(tester), pool_id, 10000000000000000u128, vec![0u128, 0u128])
+		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, assets.clone())?;
+		let _ = StableAsset::mint(RawOrigin::Signed(tester.clone()).into(), pool_id, mint_args, 0u128);
+	}: _(RawOrigin::Signed(tester), pool_id, 10000000u128, redeem_args)
 
 	redeem_single {
 		let tester: AccountId = whitelisted_caller();
 		let pool_asset = POOL_ASSET;
 		let assets = vec![ASSET_A, ASSET_B];
-		let precisions = vec![10000000000u128, 10000000000u128];
+		let precisions = vec![1u128, 1u128];
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
 		let intial_a = 100u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
-		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone());
+		let yield_recipient: AccountId = account("yield", 1, SEED);
+		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
 		let pool_id = StableAsset::pool_count() - 1;
-		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, ASSET_A, ASSET_B)?;
+		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, vec![ASSET_A, ASSET_B])?;
 		let _ = StableAsset::mint(RawOrigin::Signed(tester.clone()).into(), pool_id, vec![10000000u128, 20000000u128], 0u128);
-	}: _(RawOrigin::Signed(tester), pool_id, 10000000000000000u128, 0u32, 0u128)
+	}: _(RawOrigin::Signed(tester), pool_id, 10000000u128, 0u32, 0u128)
 
 	redeem_multi {
 		let tester: AccountId = whitelisted_caller();
 		let pool_asset = POOL_ASSET;
-		let assets = vec![ASSET_A, ASSET_B];
-		let precisions = vec![10000000000u128, 10000000000u128];
+		let u in 2 .. PoolAssetLimit::get() as u32;
+		let mut assets = vec![];
+		let mut precisions = vec![];
+		let mut mint_args = vec![];
+		let mut redeem_args = vec![];
+		for i in 0 .. u {
+			assets.push(i + 1);
+			precisions.push(1u128);
+			let multiple: u128 = (i + 1).into();
+			mint_args.push(10000000u128 * multiple);
+			redeem_args.push(500000u128);
+		}
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
 		let intial_a = 100u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
-		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone());
+		let yield_recipient: AccountId = account("yield", 1, SEED);
+		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets.clone(), precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
 		let pool_id = StableAsset::pool_count() - 1;
-		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, ASSET_A, ASSET_B)?;
-		let _ = StableAsset::mint(RawOrigin::Signed(tester.clone()).into(), pool_id, vec![10000000u128, 20000000u128], 0u128);
-	}: _(RawOrigin::Signed(tester), pool_id, vec![500000u128, 500000u128], 1100000000000000000u128)
+		let _ = initialize_assets(tester.clone(), fee_recipient.clone(), POOL_ASSET, assets.clone())?;
+		let _ = StableAsset::mint(RawOrigin::Signed(tester.clone()).into(), pool_id, mint_args, 0u128);
+	}: _(RawOrigin::Signed(tester), pool_id, redeem_args, 1100000000000000000u128)
 }
 
 #[cfg(test)]

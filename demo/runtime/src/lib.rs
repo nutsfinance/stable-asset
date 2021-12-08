@@ -326,6 +326,7 @@ impl pallet_assets::Config for Runtime {
 parameter_types! {
 	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
 	pub FeePrecision: u128 = 10000000000u128;
+	pub PoolAssetLimit: u32 = 5u32;
 }
 
 type AtLeast64BitUnsigned = u128;
@@ -452,6 +453,7 @@ impl nutsfinance_stable_asset::Config for Runtime {
 
 	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
 	type FeePrecision = FeePrecision;
+	type PoolAssetLimit = PoolAssetLimit;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;
@@ -638,6 +640,23 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
+		fn benchmark_metadata(extra: bool) -> (
+			Vec<frame_benchmarking::BenchmarkList>,
+			Vec<frame_support::traits::StorageInfo>,
+		) {
+			use frame_benchmarking::{Benchmarking, BenchmarkList};
+			use frame_support::traits::StorageInfoTrait;
+			use orml_benchmarking::list_benchmark as orml_list_benchmark;
+
+			let mut list = Vec::<BenchmarkList>::new();
+
+			orml_list_benchmark!(list, extra, nutsfinance_stable_asset, benchmarking::nutsfinance_stable_asset);
+
+			let storage_info = AllPalletsWithSystem::storage_info();
+
+			return (list, storage_info)
+		}
+
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {

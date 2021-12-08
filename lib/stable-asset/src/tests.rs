@@ -85,7 +85,6 @@ fn create_pool_successful() {
 				balances: vec![0, 0],
 				fee_recipient: 1,
 				account_id: 8319403528785522541u64,
-				pallet_id: 8319403528785522541u64,
 				yield_recipient: 1,
 				precision: 1000000000000000000u128,
 			})
@@ -162,7 +161,6 @@ fn mint_successful_equal_amounts() {
 						balances: vec![100000000000000000u128, 100000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
@@ -205,7 +203,6 @@ fn mint_successful_different_amounts() {
 						balances: vec![100000000000000000u128, 200000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
@@ -341,7 +338,6 @@ fn swap_successful() {
 						balances: vec![150000000000000000u128, 150006990000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
@@ -519,7 +515,6 @@ fn redeem_proportion_successful() {
 						balances: vec![66823030000000000u128, 133646060000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
@@ -677,7 +672,6 @@ fn redeem_single_successful() {
 						balances: vec![4968380000000000u128, 200000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
@@ -824,7 +818,6 @@ fn redeem_multi_successful() {
 						balances: vec![50000000000000000u128, 150000000000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
-						pallet_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})

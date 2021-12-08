@@ -63,7 +63,6 @@ pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId
 	balances: Vec<Balance>,
 	fee_recipient: AccountId,
 	account_id: AccountId,
-	pallet_id: AccountId,
 	yield_recipient: AccountId,
 	precision: AtLeast64BitUnsigned,
 }
@@ -1067,7 +1066,6 @@ impl<T: Config> StableAsset for Pallet<T> {
 					balances,
 					fee_recipient,
 					account_id: swap_id.clone(),
-					pallet_id: T::PalletId::get().into_account(),
 					yield_recipient,
 					precision,
 				});

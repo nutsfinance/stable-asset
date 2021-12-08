@@ -232,6 +232,8 @@ pub mod pallet {
 		#[pallet::constant]
 		type FeePrecision: Get<Self::AtLeast64BitUnsigned>;
 		#[pallet::constant]
+		type APrecision: Get<Self::AtLeast64BitUnsigned>;
+		#[pallet::constant]
 		type PoolAssetLimit: Get<u32>;
 		type WeightInfo: WeightInfo;
 		type EnsurePoolAssetId: ValidateAssetId<Self::AssetId>;
@@ -536,9 +538,14 @@ impl<T: Config> Pallet<T> {
 			prev_d = d;
 			let t1: T::AtLeast64BitUnsigned = p_d.checked_mul(&balance_size)?;
 			let t2: T::AtLeast64BitUnsigned = balance_size.checked_add(&one)?.checked_mul(&p_d)?;
-			let t3: T::AtLeast64BitUnsigned = ann.checked_sub(&one)?.checked_mul(&d)?.checked_add(&t2)?;
+			let t3: T::AtLeast64BitUnsigned = ann
+				.checked_sub(&T::APrecision::get())?
+				.checked_mul(&d)?
+				.checked_div(&T::APrecision::get())?
+				.checked_add(&t2)?;
 			d = ann
 				.checked_mul(&sum)?
+				.checked_div(&T::APrecision::get())?
 				.checked_add(&t1)?
 				.checked_mul(&d)?
 				.checked_div(&t3)?;
@@ -581,8 +588,10 @@ impl<T: Config> Pallet<T> {
 
 		c = c
 			.checked_mul(&target_d)?
+			.checked_mul(&T::APrecision::get())?
 			.checked_div(&ann.checked_mul(&balance_size)?)?;
-		let b: T::AtLeast64BitUnsigned = sum.checked_add(&target_d.checked_div(&ann)?)?;
+		let b: T::AtLeast64BitUnsigned =
+			sum.checked_add(&target_d.checked_mul(&T::APrecision::get())?.checked_div(&ann)?)?;
 		let mut prev_y: T::AtLeast64BitUnsigned;
 		let mut y: T::AtLeast64BitUnsigned = target_d;
 

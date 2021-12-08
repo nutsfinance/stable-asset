@@ -46,44 +46,44 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> nutsfinance_stable_asset::WeightInfo for WeightInfo<T> {
 	fn create_pool() -> Weight {
-		(35_345_000 as Weight)
+		(32_782_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	fn modify_a() -> Weight {
-		(22_757_000 as Weight)
+		(21_070_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 	fn mint(u: u32) -> Weight {
-		(92_628_000 as Weight) // Standard Error: 98_000
-			.saturating_add((48_354_000 as Weight).saturating_mul(u as Weight))
+		(88_554_000 as Weight) // Standard Error: 75_000
+			.saturating_add((47_312_000 as Weight).saturating_mul(u as Weight))
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
 			.saturating_add(T::DbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
 			.saturating_add(T::DbWeight::get().writes(6 as Weight))
 			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
 	}
 	fn swap() -> Weight {
-		(144_533_000 as Weight)
+		(141_802_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(9 as Weight))
 			.saturating_add(T::DbWeight::get().writes(9 as Weight))
 	}
 	fn redeem_proportion(u: u32) -> Weight {
-		(115_403_000 as Weight) // Standard Error: 400_000
-			.saturating_add((43_491_000 as Weight).saturating_mul(u as Weight))
+		(107_989_000 as Weight) // Standard Error: 154_000
+			.saturating_add((44_251_000 as Weight).saturating_mul(u as Weight))
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
 	}
 	fn redeem_single() -> Weight {
-		(139_969_000 as Weight)
+		(136_859_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(8 as Weight))
 			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
 	fn redeem_multi(u: u32) -> Weight {
-		(82_988_000 as Weight) // Standard Error: 283_000
-			.saturating_add((46_839_000 as Weight).saturating_mul(u as Weight))
+		(80_385_000 as Weight) // Standard Error: 137_000
+			.saturating_add((45_666_000 as Weight).saturating_mul(u as Weight))
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))

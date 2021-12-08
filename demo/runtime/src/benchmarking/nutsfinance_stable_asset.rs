@@ -39,7 +39,7 @@ runtime_benchmarks! {
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
-		let intial_a = 100u128;
+		let intial_a = 10000u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
 		let yield_recipient: AccountId = account("yield", 1, SEED);
 	}: _(RawOrigin::Signed(tester), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient, yield_recipient, 1000000000000000000u128)
@@ -52,7 +52,7 @@ runtime_benchmarks! {
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
-		let intial_a = 100u128;
+		let intial_a = 10000u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
 		let yield_recipient: AccountId = account("yield", 1, SEED);
 		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
@@ -74,7 +74,7 @@ runtime_benchmarks! {
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
-		let intial_a = 100u128;
+		let intial_a = 10000u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
 		let yield_recipient: AccountId = account("yield", 1, SEED);
 		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets.clone(), precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient, 1000000000000000000u128);
@@ -90,7 +90,7 @@ runtime_benchmarks! {
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
-		let intial_a = 100u128;
+		let intial_a = 10000u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
 		let yield_recipient: AccountId = account("yield", 1, SEED);
 		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
@@ -117,7 +117,7 @@ runtime_benchmarks! {
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
-		let intial_a = 100u128;
+		let intial_a = 10000u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
 		let yield_recipient: AccountId = account("yield", 1, SEED);
 		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets.clone(), precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
@@ -134,7 +134,7 @@ runtime_benchmarks! {
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
-		let intial_a = 100u128;
+		let intial_a = 10000u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
 		let yield_recipient: AccountId = account("yield", 1, SEED);
 		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets, precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);
@@ -161,7 +161,7 @@ runtime_benchmarks! {
 		let mint_fee = 10000000u128;
 		let swap_fee = 20000000u128;
 		let redeem_fee = 50000000u128;
-		let intial_a = 100u128;
+		let intial_a = 10000u128;
 		let fee_recipient: AccountId = account("fee", 0, SEED);
 		let yield_recipient: AccountId = account("yield", 1, SEED);
 		let _ = StableAsset::create_pool(RawOrigin::Signed(tester.clone()).into(), pool_asset, assets.clone(), precisions, mint_fee, swap_fee, redeem_fee, intial_a, fee_recipient.clone(), yield_recipient.clone(), 1000000000000000000u128);

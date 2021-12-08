@@ -43,7 +43,7 @@ fn create_pool() -> (i64, i64, i64, u64) {
 		10000000u128,
 		20000000u128,
 		50000000u128,
-		100u128,
+		10000u128,
 		2,
 		1,
 		1000000000000000000u128,
@@ -154,9 +154,9 @@ fn mint_successful_equal_amounts() {
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
 						total_supply: 200000000000000000u128,
-						a: 100u128,
+						a: 10000u128,
 						a_block: 0,
-						future_a: 100u128,
+						future_a: 10000u128,
 						future_a_block: 0,
 						balances: vec![100000000000000000u128, 100000000000000000u128],
 						fee_recipient: 2,
@@ -196,9 +196,9 @@ fn mint_successful_different_amounts() {
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
 						total_supply: 299906803112262055u128,
-						a: 100u128,
+						a: 10000u128,
 						a_block: 0,
-						future_a: 100u128,
+						future_a: 10000u128,
 						future_a_block: 0,
 						balances: vec![100000000000000000u128, 200000000000000000u128],
 						fee_recipient: 2,
@@ -331,9 +331,9 @@ fn swap_successful() {
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
 						total_supply: 300006989999594867u128,
-						a: 100u128,
+						a: 10000u128,
 						a_block: 0,
-						future_a: 100u128,
+						future_a: 10000u128,
 						future_a_block: 0,
 						balances: vec![150000000000000000u128, 150006990000000000u128],
 						fee_recipient: 2,
@@ -508,9 +508,9 @@ fn redeem_proportion_successful() {
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
 						total_supply: 200406813015747807u128,
-						a: 100u128,
+						a: 10000u128,
 						a_block: 0,
-						future_a: 100u128,
+						future_a: 10000u128,
 						future_a_block: 0,
 						balances: vec![66823030000000000u128, 133646060000000000u128],
 						fee_recipient: 2,
@@ -665,9 +665,9 @@ fn redeem_single_successful() {
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
 						total_supply: 200406808473680872u128,
-						a: 100u128,
+						a: 10000u128,
 						a_block: 0,
-						future_a: 100u128,
+						future_a: 10000u128,
 						future_a_block: 0,
 						balances: vec![4968380000000000u128, 200000000000000000u128],
 						fee_recipient: 2,
@@ -811,9 +811,9 @@ fn redeem_multi_successful() {
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
 						total_supply: 199834572670372728u128,
-						a: 100u128,
+						a: 10000u128,
 						a_block: 0,
-						future_a: 100u128,
+						future_a: 10000u128,
 						future_a_block: 0,
 						balances: vec![50000000000000000u128, 150000000000000000u128],
 						fee_recipient: 2,
@@ -875,7 +875,7 @@ fn redeem_multi_failed_over_max() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_multi(Origin::signed(1), 0, vec![5000000u128, 5000000u128], 1100u128,),
+					StableAsset::redeem_multi(Origin::signed(1), 0, vec![5000000u128, 5000000u128], 110000u128,),
 					Error::<Test>::RedeemOverMax
 				);
 			}
@@ -893,7 +893,7 @@ fn redeem_multi_failed_no_pool() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_multi(Origin::signed(1), 1, vec![5000000u128, 5000000u128], 1100u128,),
+					StableAsset::redeem_multi(Origin::signed(1), 1, vec![5000000u128, 5000000u128], 110000u128,),
 					Error::<Test>::PoolNotFound
 				);
 			}

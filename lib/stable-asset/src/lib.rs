@@ -36,7 +36,7 @@ use frame_support::codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::ensure;
 use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
-use frame_support::traits::Get;
+use frame_support::{traits::Get, weights::Weight};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
 use sp_std::prelude::*;
@@ -65,6 +65,16 @@ pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId
 	account_id: AccountId,
 	yield_recipient: AccountId,
 	precision: AtLeast64BitUnsigned,
+}
+
+pub trait WeightInfo {
+	fn create_pool() -> Weight;
+	fn modify_a() -> Weight;
+	fn mint(u: u32) -> Weight;
+	fn swap(u: u32) -> Weight;
+	fn redeem_proportion(u: u32) -> Weight;
+	fn redeem_single(u: u32) -> Weight;
+	fn redeem_multi(u: u32) -> Weight;
 }
 
 pub mod traits {
@@ -124,6 +134,7 @@ pub mod traits {
 			j: PoolTokenIndex,
 			dx: Self::Balance,
 			min_dy: Self::Balance,
+			asset_length: u32,
 		) -> DispatchResult;
 
 		fn redeem_proportion(
@@ -139,6 +150,7 @@ pub mod traits {
 			amount: Self::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: Self::Balance,
+			asset_length: u32,
 		) -> DispatchResult;
 
 		fn redeem_multi(
@@ -191,7 +203,7 @@ pub mod traits {
 pub mod pallet {
 	use super::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
 	use crate::traits::{StableAsset, ValidateAssetId};
-	use crate::weights::WeightInfo;
+	use crate::WeightInfo;
 	use frame_support::traits::tokens::fungibles;
 	use frame_support::{
 		dispatch::{Codec, DispatchResult},
@@ -412,7 +424,7 @@ pub mod pallet {
 			<Self as StableAsset>::mint(&who, pool_id, amounts, min_mint_amount)
 		}
 
-		#[pallet::weight(T::WeightInfo::swap())]
+		#[pallet::weight(T::WeightInfo::swap(*asset_length))]
 		#[transactional]
 		pub fn swap(
 			origin: OriginFor<T>,
@@ -421,9 +433,10 @@ pub mod pallet {
 			j: PoolTokenIndex,
 			dx: T::Balance,
 			min_dy: T::Balance,
+			asset_length: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			<Self as StableAsset>::swap(&who, pool_id, i, j, dx, min_dy)
+			<Self as StableAsset>::swap(&who, pool_id, i, j, dx, min_dy, asset_length)
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_proportion(min_redeem_amounts.len() as u32))]
@@ -438,7 +451,7 @@ pub mod pallet {
 			<Self as StableAsset>::redeem_proportion(&who, pool_id, amount, min_redeem_amounts)
 		}
 
-		#[pallet::weight(T::WeightInfo::redeem_single())]
+		#[pallet::weight(T::WeightInfo::redeem_single(*asset_length))]
 		#[transactional]
 		pub fn redeem_single(
 			origin: OriginFor<T>,
@@ -446,9 +459,10 @@ pub mod pallet {
 			amount: T::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: T::Balance,
+			asset_length: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			<Self as StableAsset>::redeem_single(&who, pool_id, amount, i, min_redeem_amount)
+			<Self as StableAsset>::redeem_single(&who, pool_id, amount, i, min_redeem_amount, asset_length)
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_multi(amounts.len() as u32))]
@@ -1046,10 +1060,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 		precision: Self::AtLeast64BitUnsigned,
 	) -> DispatchResult {
 		ensure!(assets.len() > 1, Error::<T>::ArgumentsError);
-		ensure!(
-			assets.len() <= T::PoolAssetLimit::get().try_into().unwrap(),
-			Error::<T>::ArgumentsError
-		);
+		let pool_asset_limit = T::PoolAssetLimit::get() as usize;
+		ensure!(assets.len() <= pool_asset_limit, Error::<T>::ArgumentsError);
 		ensure!(assets.len() == precisions.len(), Error::<T>::ArgumentsMismatch);
 		PoolCount::<T>::try_mutate(|pool_count| -> DispatchResult {
 			let pool_id = *pool_count;
@@ -1129,9 +1141,12 @@ impl<T: Config> StableAsset for Pallet<T> {
 		j: PoolTokenIndex,
 		dx: Self::Balance,
 		min_dy: Self::Balance,
+		asset_length: u32,
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+			let asset_length_usize = asset_length as usize;
+			ensure!(asset_length_usize == pool_info.assets.len(), Error::<T>::ArgumentsError);
 			Self::collect_income(pool_info)?;
 			let SwapResult { dy, y, balance_i } = Self::get_swap_amount(pool_info, i, j, dx)?;
 			ensure!(dy >= min_dy, Error::<T>::SwapUnderMin);
@@ -1194,6 +1209,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		amount: Self::Balance,
 		i: PoolTokenIndex,
 		min_redeem_amount: Self::Balance,
+		asset_length: u32,
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
@@ -1207,6 +1223,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			} = Self::get_redeem_single_amount(pool_info, amount, i)?;
 			let i_usize = i as usize;
 			let pool_size = pool_info.assets.len();
+			let asset_length_usize = asset_length as usize;
+			ensure!(asset_length_usize == pool_size, Error::<T>::ArgumentsError);
 			ensure!(dy >= min_redeem_amount, Error::<T>::RedeemUnderMin);
 			if fee_amount > Zero::zero() {
 				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, true)?;

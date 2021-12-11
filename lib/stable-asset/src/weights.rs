@@ -45,59 +45,53 @@ use frame_support::{
 	weights::{constants::RocksDbWeight, Weight},
 };
 use sp_std::marker::PhantomData;
-
-/// Weight functions needed for ecosystem_chainsafe.
-pub trait WeightInfo {
-	fn create_pool() -> Weight;
-	fn modify_a() -> Weight;
-	fn mint(u: u32) -> Weight;
-	fn swap() -> Weight;
-	fn redeem_proportion(u: u32) -> Weight;
-	fn redeem_single() -> Weight;
-	fn redeem_multi(u: u32) -> Weight;
-}
+use crate::WeightInfo;
 
 #[allow(clippy::unnecessary_cast)]
 impl WeightInfo for () {
 	fn create_pool() -> Weight {
-		(32_782_000 as Weight)
+		(33_115_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
 	fn modify_a() -> Weight {
-		(21_070_000 as Weight)
+		(21_186_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
 	fn mint(u: u32) -> Weight {
-		(88_554_000 as Weight) // Standard Error: 75_000
-			.saturating_add((47_312_000 as Weight).saturating_mul(u as Weight))
+		(85_694_000 as Weight) // Standard Error: 187_000
+			.saturating_add((46_172_000 as Weight).saturating_mul(u as Weight))
 			.saturating_add(RocksDbWeight::get().reads(6 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(6 as Weight))
 			.saturating_add(RocksDbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
 	}
-	fn swap() -> Weight {
-		(141_802_000 as Weight)
-			.saturating_add(RocksDbWeight::get().reads(9 as Weight))
+	fn swap(u: u32) -> Weight {
+		(124_402_000 as Weight) // Standard Error: 72_000
+			.saturating_add((8_138_000 as Weight).saturating_mul(u as Weight))
+			.saturating_add(RocksDbWeight::get().reads(7 as Weight))
+			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(u as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(9 as Weight))
 	}
 	fn redeem_proportion(u: u32) -> Weight {
-		(107_989_000 as Weight) // Standard Error: 154_000
-			.saturating_add((44_251_000 as Weight).saturating_mul(u as Weight))
+		(107_494_000 as Weight) // Standard Error: 164_000
+			.saturating_add((43_376_000 as Weight).saturating_mul(u as Weight))
 			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 			.saturating_add(RocksDbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
 	}
-	fn redeem_single() -> Weight {
-		(136_859_000 as Weight)
-			.saturating_add(RocksDbWeight::get().reads(8 as Weight))
+	fn redeem_single(u: u32) -> Weight {
+		(114_847_000 as Weight) // Standard Error: 882_000
+			.saturating_add((14_613_000 as Weight).saturating_mul(u as Weight))
+			.saturating_add(RocksDbWeight::get().reads(6 as Weight))
+			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(u as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(7 as Weight))
 	}
 	fn redeem_multi(u: u32) -> Weight {
-		(80_385_000 as Weight) // Standard Error: 137_000
-			.saturating_add((45_666_000 as Weight).saturating_mul(u as Weight))
+		(86_888_000 as Weight) // Standard Error: 152_000
+			.saturating_add((43_556_000 as Weight).saturating_mul(u as Weight))
 			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))

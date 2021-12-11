@@ -320,7 +320,7 @@ fn swap_successful() {
 			(coin0, coin1, pool_asset, swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
-				assert_ok!(StableAsset::swap(Origin::signed(1), 0, 0, 1, 5000000u128, 0));
+				assert_ok!(StableAsset::swap(Origin::signed(1), 0, 0, 1, 5000000u128, 0, 2));
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(StableAssetPoolInfo {
@@ -367,7 +367,7 @@ fn swap_failed_same_token() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 1, 1, 5000000u128, 0),
+					StableAsset::swap(Origin::signed(1), 0, 1, 1, 5000000u128, 0, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -385,7 +385,7 @@ fn swap_failed_no_pool() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 3, 0, 1, 5000000u128, 0),
+					StableAsset::swap(Origin::signed(1), 3, 0, 1, 5000000u128, 0, 2),
 					Error::<Test>::PoolNotFound
 				);
 			}
@@ -403,7 +403,7 @@ fn swap_failed_invalid_first_token() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 2, 1, 5000000u128, 0),
+					StableAsset::swap(Origin::signed(1), 0, 2, 1, 5000000u128, 0, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -421,7 +421,7 @@ fn swap_failed_invalid_second_token() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 0, 2, 5000000u128, 0),
+					StableAsset::swap(Origin::signed(1), 0, 0, 2, 5000000u128, 0, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -439,7 +439,7 @@ fn swap_failed_invalid_amount() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 0, 1, 0u128, 0),
+					StableAsset::swap(Origin::signed(1), 0, 0, 1, 0u128, 0, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -457,7 +457,7 @@ fn swap_failed_under_min() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 0, 1, 5000000u128, 50000000000000000u128,),
+					StableAsset::swap(Origin::signed(1), 0, 0, 1, 5000000u128, 50000000000000000u128, 2),
 					Error::<Test>::SwapUnderMin
 				);
 			}
@@ -475,7 +475,7 @@ fn swap_failed_under_overflow() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 0, 1, 500000000u128, 0u128,),
+					StableAsset::swap(Origin::signed(1), 0, 0, 1, 500000000u128, 0u128, 2),
 					DispatchError::Other("Overflow")
 				);
 			}
@@ -654,6 +654,7 @@ fn redeem_single_successful() {
 					100000000000000000u128,
 					0,
 					0u128,
+					2,
 				));
 				assert_eq!(
 					StableAsset::pools(0),
@@ -706,7 +707,7 @@ fn redeem_single_failed_zero_amount() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 0, 0u128, 0, 0u128,),
+					StableAsset::redeem_single(Origin::signed(1), 0, 0u128, 0, 0u128, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -724,7 +725,7 @@ fn redeem_single_failed_overflow() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 0, 1000000000000000000u128, 0, 0u128,),
+					StableAsset::redeem_single(Origin::signed(1), 0, 1000000000000000000u128, 0, 0u128, 2),
 					Error::<Test>::Math
 				);
 			}
@@ -742,7 +743,14 @@ fn redeem_single_failed_under_min() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 0, 100000000000000000u128, 0, 100000000000000000u128,),
+					StableAsset::redeem_single(
+						Origin::signed(1),
+						0,
+						100000000000000000u128,
+						0,
+						100000000000000000u128,
+						2
+					),
 					Error::<Test>::RedeemUnderMin
 				);
 			}
@@ -760,7 +768,7 @@ fn redeem_single_failed_invalid_token() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 0, 100000000000000000u128, 3, 0u128,),
+					StableAsset::redeem_single(Origin::signed(1), 0, 100000000000000000u128, 3, 0u128, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -778,7 +786,7 @@ fn redeem_single_failed_no_pool() {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 3, 100000000000000000u128, 3, 0u128,),
+					StableAsset::redeem_single(Origin::signed(1), 3, 100000000000000000u128, 3, 0u128, 2),
 					Error::<Test>::PoolNotFound
 				);
 			}

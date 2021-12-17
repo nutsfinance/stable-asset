@@ -51,40 +51,43 @@ pub enum Error<T> {
 ### Events
 ```
 pub enum Event<T: Config> {
-      CreatePool(
-          T::AccountId, // creator account id
-          PoolId,       // created pool id
-          T::AccountId, // swap id
-          T::AccountId,
-      ), // pallet id
-      Minted(
-          T::AccountId,    // minter account id
-          PoolId,          // minted pool id
-          T::Balance,      // minted amount
-          Vec<T::Balance>, // mint input asset amounts
-          T::Balance,      // fee amount
-      ),
-      TokenSwapped(
-          T::AccountId, // swapper account id
-          PoolId,       // swapped pool id
-          T::AssetId,   // input token asset id
-          T::AssetId,   // output token asset id
-          T::Balance,   // input token amount
-          T::Balance,   // output token amount
-      ),
-      Redeemed(
-          T::AccountId,    // redeemer account id
-          PoolId,          // redeemed pool id
-          T::Balance,      // redeem amount
-          Vec<T::Balance>, // amount of underlying assets redeemed
-          T::Balance,      // fee amount
-      ),
-      FeeCollected(
-          T::AccountId, // collector account id
-          PoolId,       // fee collected pool id
-          T::AccountId, // fee recipient account id
-          T::Balance,   // collected fee amount
-      ),
+      CreatePool{
+			pool_id: StableAssetPoolId, 
+			swap_id: T::AccountId,
+			pallet_id: T::AccountId,
+		},
+		Minted{
+			who: T::AccountId,
+			pool_id: StableAssetPoolId,
+			amount: T::Balance,
+			input_asset: Vec<T::Balance>,
+			fee: T::Balance,
+		},
+		TokenSwapped{
+			swapper: T::AccountId,
+			pool_id: StableAssetPoolId,
+			input_asset: T::AssetId,
+			output_asset: T::AssetId,
+			input_amount: T::Balance,
+			output_amount: T::Balance,
+		},
+		Redeemed{
+			redeemer: T::AccountId,
+			pool_id: StableAssetPoolId,
+			amount: T::Balance,
+			input_amount: Vec<T::Balance>, 
+			fee: T::Balance,
+		},
+		FeeCollected{
+			pool_id: StableAssetPoolId,
+			who: T::AccountId,
+			amount: T::Balance,
+		},
+		AModified{
+			pool_id: StableAssetPoolId, 
+			value: T::AtLeast64BitUnsigned,
+			time: T::BlockNumber,
+		},
   }
 ```
 

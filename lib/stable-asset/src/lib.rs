@@ -274,19 +274,19 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		CreatePool{
-			pool_id: StableAssetPoolId, 
+		CreatePool {
+			pool_id: StableAssetPoolId,
 			swap_id: T::AccountId,
 			pallet_id: T::AccountId,
 		},
-		Minted{
+		Minted {
 			who: T::AccountId,
 			pool_id: StableAssetPoolId,
 			amount: T::Balance,
 			input_asset: Vec<T::Balance>,
 			fee: T::Balance,
 		},
-		TokenSwapped{
+		TokenSwapped {
 			swapper: T::AccountId,
 			pool_id: StableAssetPoolId,
 			input_asset: T::AssetId,
@@ -294,20 +294,20 @@ pub mod pallet {
 			input_amount: T::Balance,
 			output_amount: T::Balance,
 		},
-		Redeemed{
+		Redeemed {
 			redeemer: T::AccountId,
 			pool_id: StableAssetPoolId,
 			amount: T::Balance,
-			input_amount: Vec<T::Balance>, 
+			input_amount: Vec<T::Balance>,
 			fee: T::Balance,
 		},
-		FeeCollected{
+		FeeCollected {
 			pool_id: StableAssetPoolId,
 			who: T::AccountId,
 			amount: T::Balance,
 		},
-		AModified{
-			pool_id: StableAssetPoolId, 
+		AModified {
+			pool_id: StableAssetPoolId,
 			value: T::AtLeast64BitUnsigned,
 			time: T::BlockNumber,
 		},
@@ -1042,7 +1042,11 @@ impl<T: Config> StableAsset for Pallet<T> {
 			T::Assets::mint_into(pool_info.pool_asset, &fee_recipient, fee_amount)?;
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
-			Self::deposit_event(Event::FeeCollected{pool_id, who: fee_recipient, amount: fee_amount});
+			Self::deposit_event(Event::FeeCollected {
+				pool_id,
+				who: fee_recipient,
+				amount: fee_amount,
+			});
 		}
 		Ok(())
 	}
@@ -1096,7 +1100,11 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 			*pool_count = pool_id.checked_add(1).ok_or(Error::<T>::InconsistentStorage)?;
 
-			Self::deposit_event(Event::CreatePool{pool_id, swap_id, pallet_id: T::PalletId::get().into_account()});
+			Self::deposit_event(Event::CreatePool {
+				pool_id,
+				swap_id,
+				pallet_id: T::PalletId::get().into_account(),
+			});
 			Ok(())
 		})
 	}
@@ -1129,7 +1137,13 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::Minted{who: who.clone(), pool_id: pool_id, amount: mint_amount, input_asset: amounts, fee: fee_amount});
+			Self::deposit_event(Event::Minted {
+				who: who.clone(),
+				pool_id: pool_id,
+				amount: mint_amount,
+				input_asset: amounts,
+				fee: fee_amount,
+			});
 			Ok(())
 		})
 	}
@@ -1161,7 +1175,14 @@ impl<T: Config> StableAsset for Pallet<T> {
 			let asset_j = pool_info.assets[j_usize];
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::TokenSwapped{swapper: who.clone(), pool_id, input_asset: asset_i, output_asset: asset_j, input_amount: dx, output_amount: dy});
+			Self::deposit_event(Event::TokenSwapped {
+				swapper: who.clone(),
+				pool_id,
+				input_asset: asset_i,
+				output_asset: asset_j,
+				input_amount: dx,
+				output_amount: dy,
+			});
 			Ok(())
 		})
 	}
@@ -1198,7 +1219,13 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::Redeemed{redeemer: who.clone(), pool_id, amount, input_amount: amounts, fee: fee_amount});
+			Self::deposit_event(Event::Redeemed {
+				redeemer: who.clone(),
+				pool_id,
+				amount,
+				input_amount: amounts,
+				fee: fee_amount,
+			});
 			Ok(())
 		})
 	}
@@ -1242,7 +1269,13 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::Redeemed{redeemer: who.clone(), pool_id, amount, input_amount: amounts, fee: fee_amount});
+			Self::deposit_event(Event::Redeemed {
+				redeemer: who.clone(),
+				pool_id,
+				amount,
+				input_amount: amounts,
+				fee: fee_amount,
+			});
 			Ok(())
 		})
 	}
@@ -1277,7 +1310,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::Redeemed{
+			Self::deposit_event(Event::Redeemed {
 				redeemer: who.clone(),
 				pool_id,
 				amount: redeem_amount,
@@ -1308,7 +1341,11 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.a_block = current_block;
 			pool_info.future_a = a;
 			pool_info.future_a_block = future_a_block;
-			Self::deposit_event(Event::AModified{pool_id, value: a, time: future_a_block});
+			Self::deposit_event(Event::AModified {
+				pool_id,
+				value: a,
+				time: future_a_block,
+			});
 			Ok(())
 		})
 	}

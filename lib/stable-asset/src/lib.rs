@@ -1139,7 +1139,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Self::collect_fee(pool_id, pool_info)?;
 			Self::deposit_event(Event::Minted {
 				who: who.clone(),
-				pool_id: pool_id,
+				pool_id,
 				amount: mint_amount,
 				input_asset: amounts,
 				fee: fee_amount,

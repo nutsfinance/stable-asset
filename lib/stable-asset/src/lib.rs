@@ -1129,7 +1129,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				if *amount == Zero::zero() {
 					continue;
 				}
-				T::Assets::transfer(pool_info.assets[i], who, &pool_info.account_id, *amount, true)?;
+				T::Assets::transfer(pool_info.assets[i], who, &pool_info.account_id, *amount, false)?;
 			}
 
 			T::Assets::mint_into(pool_info.pool_asset, &pool_info.fee_recipient, fee_amount)?;
@@ -1169,8 +1169,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			let j_usize = j as usize;
 			balances[i_usize] = balance_i;
 			balances[j_usize] = y;
-			T::Assets::transfer(pool_info.assets[i_usize], who, &pool_info.account_id, dx, true)?;
-			T::Assets::transfer(pool_info.assets[j_usize], &pool_info.account_id, who, dy, true)?;
+			T::Assets::transfer(pool_info.assets[i_usize], who, &pool_info.account_id, dx, false)?;
+			T::Assets::transfer(pool_info.assets[j_usize], &pool_info.account_id, who, dy, false)?;
 			let asset_i = pool_info.assets[i_usize];
 			let asset_j = pool_info.assets[j_usize];
 			pool_info.balances = balances;
@@ -1210,10 +1210,10 @@ impl<T: Config> StableAsset for Pallet<T> {
 			let zero: T::Balance = Zero::zero();
 			for i in 0..amounts.len() {
 				ensure!(amounts[i] >= min_redeem_amounts[i], Error::<T>::RedeemUnderMin);
-				T::Assets::transfer(pool_info.assets[i], &pool_info.account_id, who, amounts[i], true)?;
+				T::Assets::transfer(pool_info.assets[i], &pool_info.account_id, who, amounts[i], false)?;
 			}
 			if fee_amount > zero {
-				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, true)?;
+				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, false)?;
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
 			pool_info.total_supply = total_supply;
@@ -1254,9 +1254,9 @@ impl<T: Config> StableAsset for Pallet<T> {
 			ensure!(asset_length_usize == pool_size, Error::<T>::ArgumentsError);
 			ensure!(dy >= min_redeem_amount, Error::<T>::RedeemUnderMin);
 			if fee_amount > Zero::zero() {
-				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, true)?;
+				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, false)?;
 			}
-			T::Assets::transfer(pool_info.assets[i_usize], &pool_info.account_id, who, dy, true)?;
+			T::Assets::transfer(pool_info.assets[i_usize], &pool_info.account_id, who, dy, false)?;
 			T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
 			let mut amounts: Vec<T::Balance> = Vec::new();
 			for idx in 0..pool_size {
@@ -1299,11 +1299,11 @@ impl<T: Config> StableAsset for Pallet<T> {
 			let zero: T::Balance = Zero::zero();
 			ensure!(redeem_amount <= max_redeem_amount, Error::<T>::RedeemOverMax);
 			if fee_amount > zero {
-				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, true)?;
+				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, false)?;
 			}
 			for (idx, amount) in amounts.iter().enumerate() {
 				if *amount > zero {
-					T::Assets::transfer(pool_info.assets[idx], &pool_info.account_id, who, amounts[idx], true)?;
+					T::Assets::transfer(pool_info.assets[idx], &pool_info.account_id, who, amounts[idx], false)?;
 				}
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, burn_amount)?;

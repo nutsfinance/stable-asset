@@ -276,33 +276,61 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		CreatePool {
 			pool_id: StableAssetPoolId,
+			a: AtLeast64BitUnsigned,
 			swap_id: T::AccountId,
 			pallet_id: T::AccountId,
 		},
 		Minted {
 			who: T::AccountId,
 			pool_id: StableAssetPoolId,
+			a: AtLeast64BitUnsigned,
 			amount: T::Balance,
 			input_asset: Vec<T::Balance>,
+			balances: Vec<T::Balance>,
+			total_supply: Balance,
 			fee: T::Balance,
+			min_mint_amount: T::Balance,
 		},
 		TokenSwapped {
 			swapper: T::AccountId,
 			pool_id: StableAssetPoolId,
+			a: AtLeast64BitUnsigned,
 			input_asset: T::AssetId,
 			output_asset: T::AssetId,
 			input_amount: T::Balance,
 			output_amount: T::Balance,
+			balances: Vec<T::Balance>,
+			min_dy: T::Balance,
 		},
-		Redeemed {
+		// We need to create different events for three redeem methods
+		RedeemedProportion {
 			redeemer: T::AccountId,
 			pool_id: StableAssetPoolId,
+			a: AtLeast64BitUnsigned,
 			amount: T::Balance,
-			input_amount: Vec<T::Balance>,
+			output_amount: Vec<T::Balance>,
 			fee: T::Balance,
+			balances: Vec<T::Balance>,
+			total_supply: T::Balance,
+			min_redeem_amounts: T::Balance,
+		},
+		// Emitted in update_balance()
+		BalanceUpdated {
+			pool_id: StableAssetPoolId,
+			a: AtLeast64BitUnsigned,
+			old_balances: Vec<T::Balance>,
+			new_balances: Vec<T::Balance>,
+		},
+		// Emitted in collect_income()
+		YieldCollected {
+			pool_id: StableAssetPoolId,
+			a: AtLeast64BitUnsigned,
+			old_d: AtLeast64BitUnsigned,
+			new_d: AtLeast64BitUnsigned,
 		},
 		FeeCollected {
 			pool_id: StableAssetPoolId,
+			a: AtLeast64BitUnsigned,
 			who: T::AccountId,
 			amount: T::Balance,
 		},

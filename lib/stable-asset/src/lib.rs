@@ -1245,7 +1245,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			T::Assets::mint_into(pool_info.pool_asset, who, mint_amount)?;
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
-
+			// We don't need to call collect_fee in mint, since pool_info.balances and amounts are both rounded.
 			Self::deposit_event(Event::Minted {
 				minter: who.clone(),
 				pool_id,
@@ -1286,7 +1286,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			T::Assets::transfer(pool_info.assets[j_usize], &pool_info.account_id, who, dy, false)?;
 			let asset_i = pool_info.assets[i_usize];
 			let asset_j = pool_info.assets[j_usize];
-			pool_info.balances = balances;
+			
+			// Since the actual output amount is round down, collect fee should update the pool balances and total supply
 			Self::collect_fee(pool_id, pool_info)?;
 			let a: T::AtLeast64BitUnsigned = Self::get_a(
 				pool_info.a,
@@ -1340,9 +1341,11 @@ impl<T: Config> StableAsset for Pallet<T> {
 				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, false)?;
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
+			
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
-
+			// Since the output amounts are round down, collect fee updates pool balances and total supply.
+			Self::collect_fee(pool_id, pool_info)?;
 			let a: T::AtLeast64BitUnsigned = Self::get_a(
 				pool_info.a,
 				pool_info.a_block,
@@ -1401,9 +1404,11 @@ impl<T: Config> StableAsset for Pallet<T> {
 					amounts.push(Zero::zero());
 				}
 			}
+
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
-
+			// Since the output amounts are round down, collect fee updates pool balances and total supply.
+			Self::collect_fee(pool_id, pool_info)?;
 			let a: T::AtLeast64BitUnsigned = Self::get_a(
 				pool_info.a,
 				pool_info.a_block,
@@ -1454,9 +1459,10 @@ impl<T: Config> StableAsset for Pallet<T> {
 				}
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, burn_amount)?;
+			
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
-
+			Self::collect_fee(pool_id, pool_info)?;
 			let a: T::AtLeast64BitUnsigned = Self::get_a(
 				pool_info.a,
 				pool_info.a_block,
@@ -1473,7 +1479,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				balances: pool_info.balances.clone(),
 				total_supply: pool_info.total_supply,
 				fee_amount,
-				input_amount: burn_amount,
+				input_amount: redeem_amount,
 			});
 			Ok(())
 		})

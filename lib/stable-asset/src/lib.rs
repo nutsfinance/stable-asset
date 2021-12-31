@@ -377,6 +377,7 @@ pub mod pallet {
 		ArgumentsError,
 		PoolNotFound,
 		Math,
+		InvalidPoolValue,
 		MintUnderMin,
 		SwapUnderMin,
 		RedeemUnderMin,
@@ -1079,6 +1080,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Self::update_balance(pool_id, pool_info)?;
 		let balances: Vec<T::AtLeast64BitUnsigned> = Self::convert_vec_balance_to_number(pool_info.balances.clone());
 		let new_d: T::AtLeast64BitUnsigned = Self::get_d(&balances, a).ok_or(Error::<T>::Math)?;
+
+		ensure!(new_d >= old_d, Error::<T>::InvalidPoolValue);
 		if new_d > old_d {
 			let a: T::AtLeast64BitUnsigned = Self::get_a(
 				pool_info.a,

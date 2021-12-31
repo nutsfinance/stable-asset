@@ -215,15 +215,15 @@ fn mint_successful_different_amounts() {
 				assert_eq!(TestAssets::balance(pool_asset, &1), 299606896309149793u128);
 				assert_eq!(TestAssets::balance(pool_asset, &2), 299906803112262u128);
 				if let Event::StableAsset(crate::pallet::Event::Minted {
-					who: _,
+					minter: _,
 					pool_id: _,
-					amount: mint_amount,
-					input_asset: _,
-					fee: fee_amount,
+					output_amount: mint_amount,
+					input_amounts: _,
+					fee_amount,
 					a: _,
 					balances: _,
 					total_supply: _,
-					min_mint_amount: _,
+					min_output_amount: _,
 				}) = last_event()
 				{
 					assert_eq!(mint_amount, 299606896309149793u128);
@@ -366,7 +366,7 @@ fn swap_successful() {
 					a: _,
 					balances: _,
 					total_supply: _,
-					min_dy: _,
+					min_output_amount: _,
 				}) = last_event()
 				{
 					assert_eq!(dx, 5000000u128);
@@ -552,12 +552,11 @@ fn redeem_proportion_successful() {
 					pool_id: _,
 					input_amount: amount,
 					output_amounts: amounts,
-					fee: fee_amount,
+					fee_amount,
 					a: _,
 					balances: _,
 					total_supply: _,
-					min_redeem_amounts: _,
-					redeem_amount: _,
+					min_output_amounts: _,
 				}) = last_event()
 				{
 					assert_eq!(amount, 100000000000000000u128);
@@ -720,13 +719,12 @@ fn redeem_single_successful() {
 					pool_id: _,
 					input_amount,
 					output_amount,
-					fee: fee_amount,
+					fee_amount,
 					a: _,
 					balances: _,
 					total_supply: _,
-					min_redeem_amount: _,
-					input_asset: _,
-					redeem_amount: _,
+					min_output_amount: _,
+					output_asset: _,
 				}) = last_event()
 				{
 					assert_eq!(input_amount, 100000000000000000u128);
@@ -882,14 +880,13 @@ fn redeem_multi_successful() {
 				if let Event::StableAsset(crate::pallet::Event::RedeemedMulti {
 					redeemer: _,
 					pool_id: _,
-					redeem_amount: amount,
-					input_amounts: amounts,
-					fee: fee_amount,
+					output_amounts: amounts,
+					input_amount: amount,
+					fee_amount,
 					a: _,
 					balances: _,
 					total_supply: _,
-					max_redeem_amount: _,
-					burn_amount: _,
+					max_input_amount: _,
 				}) = last_event()
 				{
 					assert_eq!(amount, 100575105971748067u128);

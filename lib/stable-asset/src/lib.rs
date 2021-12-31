@@ -172,6 +172,7 @@ pub mod traits {
 		) -> DispatchResult;
 
 		fn update_balance(
+			pool_id: StableAssetPoolId,
 			pool_info: &mut StableAssetPoolInfo<
 				Self::AssetId,
 				Self::AtLeast64BitUnsigned,
@@ -182,6 +183,7 @@ pub mod traits {
 		) -> DispatchResult;
 
 		fn collect_income(
+			pool_id: StableAssetPoolId,
 			pool_info: &mut StableAssetPoolInfo<
 				Self::AssetId,
 				Self::AtLeast64BitUnsigned,
@@ -276,61 +278,85 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		CreatePool {
 			pool_id: StableAssetPoolId,
-			a: AtLeast64BitUnsigned,
+			a: T::AtLeast64BitUnsigned,
 			swap_id: T::AccountId,
 			pallet_id: T::AccountId,
 		},
 		Minted {
 			who: T::AccountId,
 			pool_id: StableAssetPoolId,
-			a: AtLeast64BitUnsigned,
+			a: T::AtLeast64BitUnsigned,
 			amount: T::Balance,
 			input_asset: Vec<T::Balance>,
 			balances: Vec<T::Balance>,
-			total_supply: Balance,
+			total_supply: T::Balance,
 			fee: T::Balance,
 			min_mint_amount: T::Balance,
 		},
 		TokenSwapped {
 			swapper: T::AccountId,
 			pool_id: StableAssetPoolId,
-			a: AtLeast64BitUnsigned,
+			a: T::AtLeast64BitUnsigned,
 			input_asset: T::AssetId,
 			output_asset: T::AssetId,
 			input_amount: T::Balance,
 			output_amount: T::Balance,
 			balances: Vec<T::Balance>,
+			total_supply: T::Balance,
 			min_dy: T::Balance,
 		},
-		// We need to create different events for three redeem methods
 		RedeemedProportion {
 			redeemer: T::AccountId,
 			pool_id: StableAssetPoolId,
-			a: AtLeast64BitUnsigned,
-			amount: T::Balance,
-			output_amount: Vec<T::Balance>,
+			a: T::AtLeast64BitUnsigned,
+			input_amount: T::Balance,
+			output_amounts: Vec<T::Balance>,
 			fee: T::Balance,
 			balances: Vec<T::Balance>,
 			total_supply: T::Balance,
-			min_redeem_amounts: T::Balance,
+			min_redeem_amounts: Vec<T::Balance>,
+			redeem_amount: T::Balance,
 		},
-		// Emitted in update_balance()
+		RedeemedSingle {
+			redeemer: T::AccountId,
+			pool_id: StableAssetPoolId,
+			a: T::AtLeast64BitUnsigned,
+			input_amount: T::Balance,
+			output_amount: T::Balance,
+			fee: T::Balance,
+			balances: Vec<T::Balance>,
+			total_supply: T::Balance,
+			min_redeem_amount: T::Balance,
+			input_asset: T::AssetId,
+			redeem_amount: T::Balance,
+		},
+		RedeemedMulti {
+			redeemer: T::AccountId,
+			pool_id: StableAssetPoolId,
+			a: T::AtLeast64BitUnsigned,
+			input_amounts: Vec<T::Balance>,
+			fee: T::Balance,
+			balances: Vec<T::Balance>,
+			total_supply: T::Balance,
+			max_redeem_amount: T::Balance,
+			redeem_amount: T::Balance,
+			burn_amount: T::Balance,
+		},
 		BalanceUpdated {
 			pool_id: StableAssetPoolId,
-			a: AtLeast64BitUnsigned,
+			a: T::AtLeast64BitUnsigned,
 			old_balances: Vec<T::Balance>,
 			new_balances: Vec<T::Balance>,
 		},
-		// Emitted in collect_income()
 		YieldCollected {
 			pool_id: StableAssetPoolId,
-			a: AtLeast64BitUnsigned,
-			old_d: AtLeast64BitUnsigned,
-			new_d: AtLeast64BitUnsigned,
+			a: T::AtLeast64BitUnsigned,
+			old_d: T::AtLeast64BitUnsigned,
+			new_d: T::AtLeast64BitUnsigned,
 		},
 		FeeCollected {
 			pool_id: StableAssetPoolId,
-			a: AtLeast64BitUnsigned,
+			a: T::AtLeast64BitUnsigned,
 			who: T::AccountId,
 			amount: T::Balance,
 		},
@@ -1003,6 +1029,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	}
 
 	fn update_balance(
+		pool_id: StableAssetPoolId,
 		pool_info: &mut StableAssetPoolInfo<
 			Self::AssetId,
 			Self::AtLeast64BitUnsigned,
@@ -1011,6 +1038,14 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Self::BlockNumber,
 		>,
 	) -> DispatchResult {
+		let old_balances = pool_info.balances.clone();
+		let a: T::AtLeast64BitUnsigned = Self::get_a(
+			pool_info.a,
+			pool_info.a_block,
+			pool_info.future_a,
+			pool_info.future_a_block,
+		)
+		.ok_or(Error::<T>::Math)?;
 		for (i, balance) in pool_info.balances.iter_mut().enumerate() {
 			let balance_of: Self::AtLeast64BitUnsigned =
 				T::Assets::balance(pool_info.assets[i], &pool_info.account_id).into();
@@ -1019,10 +1054,17 @@ impl<T: Config> StableAsset for Pallet<T> {
 				.ok_or(Error::<T>::Math)?
 				.into();
 		}
+		Self::deposit_event(Event::BalanceUpdated {
+			pool_id,
+			a,
+			old_balances,
+			new_balances: pool_info.balances.clone(),
+		});
 		Ok(())
 	}
 
 	fn collect_income(
+		pool_id: StableAssetPoolId,
 		pool_info: &mut StableAssetPoolInfo<
 			Self::AssetId,
 			Self::AtLeast64BitUnsigned,
@@ -1039,12 +1081,25 @@ impl<T: Config> StableAsset for Pallet<T> {
 		)
 		.ok_or(Error::<T>::Math)?;
 		let old_d: T::AtLeast64BitUnsigned = pool_info.total_supply.into();
-		Self::update_balance(pool_info)?;
+		Self::update_balance(pool_id, pool_info)?;
 		let balances: Vec<T::AtLeast64BitUnsigned> = Self::convert_vec_balance_to_number(pool_info.balances.clone());
 		let new_d: T::AtLeast64BitUnsigned = Self::get_d(&balances, a).ok_or(Error::<T>::Math)?;
 		if new_d > old_d {
+			let a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_block,
+				pool_info.future_a,
+				pool_info.future_a_block,
+			)
+			.ok_or(Error::<T>::Math)?;
 			T::Assets::mint_into(pool_info.pool_asset, &pool_info.yield_recipient, new_d.into())?;
 			pool_info.total_supply = new_d.into();
+			Self::deposit_event(Event::YieldCollected {
+				pool_id,
+				a,
+				old_d,
+				new_d,
+			});
 		}
 		Ok(())
 	}
@@ -1068,10 +1123,18 @@ impl<T: Config> StableAsset for Pallet<T> {
 		if fee_amount > zero {
 			let fee_recipient = pool_info.fee_recipient.clone();
 			T::Assets::mint_into(pool_info.pool_asset, &fee_recipient, fee_amount)?;
+			let a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_block,
+				pool_info.future_a,
+				pool_info.future_a_block,
+			)
+			.ok_or(Error::<T>::Math)?;
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::deposit_event(Event::FeeCollected {
 				pool_id,
+				a,
 				who: fee_recipient,
 				amount: fee_amount,
 			});
@@ -1131,6 +1194,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Self::deposit_event(Event::CreatePool {
 				pool_id,
 				swap_id,
+				a: initial_a,
 				pallet_id: T::PalletId::get().into_account(),
 			});
 			Ok(())
@@ -1145,13 +1209,20 @@ impl<T: Config> StableAsset for Pallet<T> {
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			Self::collect_income(pool_info)?;
+			Self::collect_income(pool_id, pool_info)?;
 			let MintResult {
 				mint_amount,
 				fee_amount,
 				balances,
 				total_supply,
 			} = Self::get_mint_amount(pool_info, &amounts)?;
+			let a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_block,
+				pool_info.future_a,
+				pool_info.future_a_block,
+			)
+			.ok_or(Error::<T>::Math)?;
 			ensure!(mint_amount >= min_mint_amount, Error::<T>::MintUnderMin);
 			for (i, amount) in amounts.iter().enumerate() {
 				if *amount == Zero::zero() {
@@ -1168,8 +1239,12 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Self::deposit_event(Event::Minted {
 				who: who.clone(),
 				pool_id,
+				a,
 				amount: mint_amount,
 				input_asset: amounts,
+				min_mint_amount,
+				balances: pool_info.balances.clone(),
+				total_supply: pool_info.total_supply,
 				fee: fee_amount,
 			});
 			Ok(())
@@ -1189,7 +1264,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let asset_length_usize = asset_length as usize;
 			ensure!(asset_length_usize == pool_info.assets.len(), Error::<T>::ArgumentsError);
-			Self::collect_income(pool_info)?;
+			Self::collect_income(pool_id, pool_info)?;
 			let SwapResult { dy, y, balance_i } = Self::get_swap_amount(pool_info, i, j, dx)?;
 			ensure!(dy >= min_dy, Error::<T>::SwapUnderMin);
 			let mut balances = pool_info.balances.clone();
@@ -1203,6 +1278,13 @@ impl<T: Config> StableAsset for Pallet<T> {
 			let asset_j = pool_info.assets[j_usize];
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
+			let a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_block,
+				pool_info.future_a,
+				pool_info.future_a_block,
+			)
+			.ok_or(Error::<T>::Math)?;
 			Self::deposit_event(Event::TokenSwapped {
 				swapper: who.clone(),
 				pool_id,
@@ -1210,6 +1292,10 @@ impl<T: Config> StableAsset for Pallet<T> {
 				output_asset: asset_j,
 				input_amount: dx,
 				output_amount: dy,
+				balances: pool_info.balances.clone(),
+				total_supply: pool_info.total_supply,
+				a,
+				min_dy,
 			});
 			Ok(())
 		})
@@ -1223,7 +1309,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			Self::collect_income(pool_info)?;
+			Self::collect_income(pool_id, pool_info)?;
 			ensure!(
 				min_redeem_amounts.len() == pool_info.assets.len(),
 				Error::<T>::ArgumentsMismatch
@@ -1247,12 +1333,24 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::Redeemed {
+			let a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_block,
+				pool_info.future_a,
+				pool_info.future_a_block,
+			)
+			.ok_or(Error::<T>::Math)?;
+			Self::deposit_event(Event::RedeemedProportion {
 				redeemer: who.clone(),
 				pool_id,
-				amount,
-				input_amount: amounts,
+				a,
+				input_amount: amount,
 				fee: fee_amount,
+				output_amounts: amounts,
+				balances: pool_info.balances.clone(),
+				total_supply: pool_info.total_supply,
+				min_redeem_amounts,
+				redeem_amount,
 			});
 			Ok(())
 		})
@@ -1268,7 +1366,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			Self::collect_income(pool_info)?;
+			Self::collect_income(pool_id, pool_info)?;
 			let RedeemSingleResult {
 				dy,
 				fee_amount,
@@ -1297,12 +1395,25 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::Redeemed {
+			let a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_block,
+				pool_info.future_a,
+				pool_info.future_a_block,
+			)
+			.ok_or(Error::<T>::Math)?;
+			Self::deposit_event(Event::RedeemedSingle {
 				redeemer: who.clone(),
 				pool_id,
-				amount,
-				input_amount: amounts,
+				a,
 				fee: fee_amount,
+				output_amount: dy,
+				input_amount: amount,
+				balances: pool_info.balances.clone(),
+				total_supply: pool_info.total_supply,
+				min_redeem_amount,
+				input_asset: pool_info.assets[i_usize],
+				redeem_amount,
 			});
 			Ok(())
 		})
@@ -1316,7 +1427,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	) -> DispatchResult {
 		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			Self::collect_income(pool_info)?;
+			Self::collect_income(pool_id, pool_info)?;
 			let RedeemMultiResult {
 				redeem_amount,
 				fee_amount,
@@ -1338,12 +1449,24 @@ impl<T: Config> StableAsset for Pallet<T> {
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::Redeemed {
+			let a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_block,
+				pool_info.future_a,
+				pool_info.future_a_block,
+			)
+			.ok_or(Error::<T>::Math)?;
+			Self::deposit_event(Event::RedeemedMulti {
 				redeemer: who.clone(),
 				pool_id,
-				amount: redeem_amount,
-				input_amount: amounts,
+				a,
 				fee: fee_amount,
+				input_amounts: amounts,
+				balances: pool_info.balances.clone(),
+				total_supply: pool_info.total_supply,
+				max_redeem_amount,
+				redeem_amount,
+				burn_amount,
 			});
 			Ok(())
 		})

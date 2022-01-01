@@ -1286,7 +1286,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			T::Assets::transfer(pool_info.assets[j_usize], &pool_info.account_id, who, dy, false)?;
 			let asset_i = pool_info.assets[i_usize];
 			let asset_j = pool_info.assets[j_usize];
-			
+
 			// Since the actual output amount is round down, collect fee should update the pool balances and total supply
 			Self::collect_fee(pool_id, pool_info)?;
 			let a: T::AtLeast64BitUnsigned = Self::get_a(
@@ -1341,7 +1341,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, false)?;
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
-			
+
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			// Since the output amounts are round down, collect fee updates pool balances and total supply.
@@ -1459,7 +1459,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				}
 			}
 			T::Assets::burn_from(pool_info.pool_asset, who, burn_amount)?;
-			
+
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
 			Self::collect_fee(pool_id, pool_info)?;

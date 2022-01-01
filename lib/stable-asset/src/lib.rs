@@ -1287,7 +1287,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			let asset_i = pool_info.assets[i_usize];
 			let asset_j = pool_info.assets[j_usize];
 
-			// Since the actual output amount is round down, collect fee should update the pool balances and total supply
+			// Since the actual output amount is round down, collect fee should update the pool balances and
+			// total supply
 			Self::collect_fee(pool_id, pool_info)?;
 			let a: T::AtLeast64BitUnsigned = Self::get_a(
 				pool_info.a,

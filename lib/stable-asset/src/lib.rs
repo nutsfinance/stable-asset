@@ -996,13 +996,22 @@ impl<T: Config> Pallet<T> {
 				.ok_or(Error::<T>::Math)?;
 		}
 		let new_d: T::AtLeast64BitUnsigned = Self::get_d(&balances, a).ok_or(Error::<T>::Math)?;
-		let fee_amount: T::AtLeast64BitUnsigned = new_d.checked_sub(&old_d).ok_or(Error::<T>::Math)?;
 
-		Ok(PendingFeeResult {
-			fee_amount: fee_amount.into(),
-			balances: Self::convert_vec_number_to_balance(balances),
-			total_supply: new_d.into(),
-		})
+		if new_d > old_d {
+			let fee_amount: T::AtLeast64BitUnsigned = new_d.checked_sub(&old_d).ok_or(Error::<T>::Math)?;
+			Ok(PendingFeeResult {
+				fee_amount: fee_amount.into(),
+				balances: Self::convert_vec_number_to_balance(balances),
+				total_supply: new_d.into(),
+			})
+		} else {
+			// this is due to rounding issues for token balance conversion
+			Ok(PendingFeeResult {
+				fee_amount: Zero::zero(),
+				balances: Self::convert_vec_number_to_balance(balances),
+				total_supply: new_d.into(),
+			})
+		}
 	}
 }
 

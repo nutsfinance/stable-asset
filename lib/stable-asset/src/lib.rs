@@ -1254,7 +1254,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			T::Assets::mint_into(pool_info.pool_asset, who, mint_amount)?;
 			pool_info.total_supply = total_supply;
 			pool_info.balances = balances;
-			// We don't need to call collect_fee in mint, since pool_info.balances and amounts are both rounded.
+			Self::collect_fee(pool_id, pool_info)?;
 			Self::deposit_event(Event::Minted {
 				minter: who.clone(),
 				pool_id,

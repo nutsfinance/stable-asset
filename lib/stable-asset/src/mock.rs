@@ -189,6 +189,7 @@ impl Inspect<AccountId> for TestAssets {
 				let a = d.get(i)?;
 				a.balances.get(who).copied()
 			})
+			.map(|x| x - 1)
 			.unwrap_or(0)
 	}
 

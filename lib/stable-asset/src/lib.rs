@@ -1132,6 +1132,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			total_supply,
 		} = Self::get_pending_fee_amount(pool_info)?;
 		let zero: T::Balance = Zero::zero();
+		pool_info.total_supply = total_supply;
+		pool_info.balances = balances;
 		if fee_amount > zero {
 			let fee_recipient = pool_info.fee_recipient.clone();
 			T::Assets::mint_into(pool_info.pool_asset, &fee_recipient, fee_amount)?;
@@ -1142,8 +1144,6 @@ impl<T: Config> StableAsset for Pallet<T> {
 				pool_info.future_a_block,
 			)
 			.ok_or(Error::<T>::Math)?;
-			pool_info.total_supply = total_supply;
-			pool_info.balances = balances;
 			Self::deposit_event(Event::FeeCollected {
 				pool_id,
 				a,

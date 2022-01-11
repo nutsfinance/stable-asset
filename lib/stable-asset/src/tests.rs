@@ -21,6 +21,8 @@ use frame_support::assert_ok;
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::fungibles::{Inspect, Mutate};
 
+pub const BALANCE_OFF: u128 = 1;
+
 fn last_event() -> Event {
 	frame_system::pallet::Pallet::<Test>::events()
 		.pop()
@@ -153,12 +155,12 @@ fn mint_successful_equal_amounts() {
 						mint_fee: 10000000u128,
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
-						total_supply: 200000000000000000u128,
+						total_supply: 199999980000000000u128,
 						a: 10000u128,
 						a_block: 0,
 						future_a: 10000u128,
 						future_a_block: 0,
-						balances: vec![100000000000000000u128, 100000000000000000u128],
+						balances: vec![99999990000000000u128, 99999990000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						yield_recipient: 1,
@@ -166,12 +168,15 @@ fn mint_successful_equal_amounts() {
 					})
 				);
 
-				assert_eq!(TestAssets::balance(coin0, &1), 90000000u128);
-				assert_eq!(TestAssets::balance(coin1, &1), 90000000u128);
-				assert_eq!(TestAssets::balance(coin0, &swap_id), 10000000u128);
-				assert_eq!(TestAssets::balance(coin1, &swap_id), 10000000u128);
-				assert_eq!(TestAssets::balance(pool_asset, &1), 199800000000000000u128);
-				assert_eq!(TestAssets::balance(pool_asset, &2), 200000000000000u128);
+				assert_eq!(TestAssets::balance(coin0, &1), 90000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &1), 90000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin0, &swap_id), 10000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &swap_id), 10000000u128 - BALANCE_OFF);
+				assert_eq!(
+					TestAssets::balance(pool_asset, &1),
+					199800000000000000u128 - BALANCE_OFF
+				);
+				assert_eq!(TestAssets::balance(pool_asset, &2), 200000000000000u128 - BALANCE_OFF);
 			}
 		}
 	});
@@ -195,12 +200,12 @@ fn mint_successful_different_amounts() {
 						mint_fee: 10000000u128,
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
-						total_supply: 299906803112262055u128,
+						total_supply: 299906783104508635u128,
 						a: 10000u128,
 						a_block: 0,
 						future_a: 10000u128,
 						future_a_block: 0,
-						balances: vec![100000000000000000u128, 200000000000000000u128],
+						balances: vec![99999990000000000u128, 199999990000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						yield_recipient: 1,
@@ -208,12 +213,15 @@ fn mint_successful_different_amounts() {
 					})
 				);
 
-				assert_eq!(TestAssets::balance(coin0, &1), 90000000u128);
-				assert_eq!(TestAssets::balance(coin1, &1), 80000000u128);
-				assert_eq!(TestAssets::balance(coin0, &swap_id), 10000000u128);
-				assert_eq!(TestAssets::balance(coin1, &swap_id), 20000000u128);
-				assert_eq!(TestAssets::balance(pool_asset, &1), 299606896309149793u128);
-				assert_eq!(TestAssets::balance(pool_asset, &2), 299906803112262u128);
+				assert_eq!(TestAssets::balance(coin0, &1), 90000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &1), 80000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin0, &swap_id), 10000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &swap_id), 20000000u128 - BALANCE_OFF);
+				assert_eq!(
+					TestAssets::balance(pool_asset, &1),
+					299606896309149793u128 - BALANCE_OFF
+				);
+				assert_eq!(TestAssets::balance(pool_asset, &2), 299906803112262u128 - BALANCE_OFF);
 				if let Event::StableAsset(crate::pallet::Event::Minted {
 					minter: _,
 					pool_id: _,
@@ -340,22 +348,22 @@ fn swap_successful() {
 						mint_fee: 10000000u128,
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
-						total_supply: 300006989999594867u128,
+						total_supply: 300006969999594867u128,
 						a: 10000u128,
 						a_block: 0,
 						future_a: 10000u128,
 						future_a_block: 0,
-						balances: vec![150000000000000000u128, 150006990000000000u128],
+						balances: vec![149999990000000000u128, 150006980000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
-				assert_eq!(TestAssets::balance(coin0, &1), 85000000u128);
-				assert_eq!(TestAssets::balance(coin1, &1), 84999301u128);
-				assert_eq!(TestAssets::balance(coin0, &swap_id), 15000000u128);
-				assert_eq!(TestAssets::balance(coin1, &swap_id), 15000699u128);
+				assert_eq!(TestAssets::balance(coin0, &1), 85000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &1), 84999301u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin0, &swap_id), 15000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &swap_id), 15000699u128 - BALANCE_OFF);
 				if let Event::StableAsset(crate::pallet::Event::TokenSwapped {
 					swapper: _,
 					pool_id: _,
@@ -529,24 +537,27 @@ fn redeem_proportion_successful() {
 						mint_fee: 10000000u128,
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
-						total_supply: 200406813015747807u128,
+						total_supply: 200406793007994387u128,
 						a: 10000u128,
 						a_block: 0,
 						future_a: 10000u128,
 						future_a_block: 0,
-						balances: vec![66823030000000000u128, 133646060000000000u128],
+						balances: vec![66823020000000000u128, 133646050000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
-				assert_eq!(TestAssets::balance(coin0, &1), 93317697u128);
-				assert_eq!(TestAssets::balance(coin1, &1), 86635394u128);
-				assert_eq!(TestAssets::balance(coin0, &swap_id), 6682303u128);
-				assert_eq!(TestAssets::balance(coin1, &swap_id), 13364606u128);
-				assert_eq!(TestAssets::balance(pool_asset, &1), 199606896309149793u128);
-				assert_eq!(TestAssets::balance(pool_asset, &2), 799916706598014u128);
+				assert_eq!(TestAssets::balance(coin0, &1), 93317697u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &1), 86635394u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin0, &swap_id), 6682303u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &swap_id), 13364606u128 - BALANCE_OFF);
+				assert_eq!(
+					TestAssets::balance(pool_asset, &1),
+					199606896309149793u128 - BALANCE_OFF
+				);
+				assert_eq!(TestAssets::balance(pool_asset, &2), 799916706598014u128 - BALANCE_OFF);
 				if let Event::StableAsset(crate::pallet::Event::RedeemedProportion {
 					redeemer: _,
 					pool_id: _,
@@ -696,24 +707,27 @@ fn redeem_single_successful() {
 						mint_fee: 10000000u128,
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
-						total_supply: 200406808473680872u128,
+						total_supply: 200406798920642765u128,
 						a: 10000u128,
 						a_block: 0,
 						future_a: 10000u128,
 						future_a_block: 0,
-						balances: vec![4968380000000000u128, 200000000000000000u128],
+						balances: vec![4968380000000000u128, 199999990000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
-				assert_eq!(TestAssets::balance(coin0, &1), 99503162u128);
-				assert_eq!(TestAssets::balance(coin1, &1), 80000000u128);
+				assert_eq!(TestAssets::balance(coin0, &1), 99503160u128);
+				assert_eq!(TestAssets::balance(coin1, &1), 80000000u128 - BALANCE_OFF);
 				assert_eq!(TestAssets::balance(coin0, &swap_id), 496838u128);
-				assert_eq!(TestAssets::balance(coin1, &swap_id), 20000000u128);
-				assert_eq!(TestAssets::balance(pool_asset, &1), 199606896309149793u128);
-				assert_eq!(TestAssets::balance(pool_asset, &2), 799912164531079u128);
+				assert_eq!(TestAssets::balance(coin1, &swap_id), 20000000u128 - BALANCE_OFF);
+				assert_eq!(
+					TestAssets::balance(pool_asset, &1),
+					199606896309149793u128 - BALANCE_OFF
+				);
+				assert_eq!(TestAssets::balance(pool_asset, &2), 799922619246391u128);
 				if let Event::StableAsset(crate::pallet::Event::RedeemedSingle {
 					redeemer: _,
 					pool_id: _,
@@ -728,7 +742,7 @@ fn redeem_single_successful() {
 				}) = last_event()
 				{
 					assert_eq!(input_amount, 100000000000000000u128);
-					assert_eq!(output_amount, 9503162u128);
+					assert_eq!(output_amount, 9503161u128);
 					assert_eq!(fee_amount, 500000000000000u128);
 				} else {
 					panic!("Unexpected event");
@@ -859,24 +873,24 @@ fn redeem_multi_successful() {
 						mint_fee: 10000000u128,
 						swap_fee: 20000000u128,
 						redeem_fee: 50000000u128,
-						total_supply: 199834572670372728u128,
+						total_supply: 199834552642910514u128,
 						a: 10000u128,
 						a_block: 0,
 						future_a: 10000u128,
 						future_a_block: 0,
-						balances: vec![50000000000000000u128, 150000000000000000u128],
+						balances: vec![49999990000000000u128, 149999990000000000u128],
 						fee_recipient: 2,
 						account_id: swap_id,
 						yield_recipient: 1,
 						precision: 1000000000000000000u128,
 					})
 				);
-				assert_eq!(TestAssets::balance(coin0, &1), 95000000u128);
-				assert_eq!(TestAssets::balance(coin1, &1), 85000000u128);
-				assert_eq!(TestAssets::balance(coin0, &swap_id), 5000000u128);
-				assert_eq!(TestAssets::balance(coin1, &swap_id), 15000000u128);
-				assert_eq!(TestAssets::balance(pool_asset, &1), 199031790337401726u128);
-				assert_eq!(TestAssets::balance(pool_asset, &2), 802782332971002u128);
+				assert_eq!(TestAssets::balance(coin0, &1), 95000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &1), 85000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin0, &swap_id), 5000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(coin1, &swap_id), 15000000u128 - BALANCE_OFF);
+				assert_eq!(TestAssets::balance(pool_asset, &1), 199031790317593892u128);
+				assert_eq!(TestAssets::balance(pool_asset, &2), 802782333070040u128);
 				if let Event::StableAsset(crate::pallet::Event::RedeemedMulti {
 					redeemer: _,
 					pool_id: _,
@@ -889,9 +903,9 @@ fn redeem_multi_successful() {
 					max_input_amount: _,
 				}) = last_event()
 				{
-					assert_eq!(amount, 100575105971748067u128);
+					assert_eq!(amount, 100575105991555900u128);
 					assert_eq!(amounts, vec![5000000u128, 5000000u128]);
-					assert_eq!(fee_amount, 502875529858740u128);
+					assert_eq!(fee_amount, 502875529957779u128);
 				} else {
 					panic!("Unexpected event");
 				}

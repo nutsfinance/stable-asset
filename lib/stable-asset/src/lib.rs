@@ -49,22 +49,22 @@ const NUMBER_OF_ITERATIONS_TO_CONVERGE: i32 = 255; // the number of iterations t
 
 #[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug, TypeInfo)]
 pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId, BlockNumber> {
-	pool_asset: AssetId,
-	assets: Vec<AssetId>,
-	precisions: Vec<AtLeast64BitUnsigned>,
-	mint_fee: AtLeast64BitUnsigned,
-	swap_fee: AtLeast64BitUnsigned,
-	redeem_fee: AtLeast64BitUnsigned,
-	total_supply: Balance,
-	a: AtLeast64BitUnsigned,
-	a_block: BlockNumber,
-	future_a: AtLeast64BitUnsigned,
-	future_a_block: BlockNumber,
-	balances: Vec<Balance>,
-	fee_recipient: AccountId,
-	account_id: AccountId,
-	yield_recipient: AccountId,
-	precision: AtLeast64BitUnsigned,
+	pub pool_asset: AssetId,
+	pub assets: Vec<AssetId>,
+	pub precisions: Vec<AtLeast64BitUnsigned>,
+	pub mint_fee: AtLeast64BitUnsigned,
+	pub swap_fee: AtLeast64BitUnsigned,
+	pub redeem_fee: AtLeast64BitUnsigned,
+	pub total_supply: Balance,
+	pub a: AtLeast64BitUnsigned,
+	pub a_block: BlockNumber,
+	pub future_a: AtLeast64BitUnsigned,
+	pub future_a_block: BlockNumber,
+	pub balances: Vec<Balance>,
+	pub fee_recipient: AccountId,
+	pub account_id: AccountId,
+	pub yield_recipient: AccountId,
+	pub precision: AtLeast64BitUnsigned,
 }
 
 pub trait WeightInfo {

@@ -1139,8 +1139,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 		>,
 	) -> DispatchResult {
 		let old_balances = pool_info.balances.clone();
-		let new_balances_pool_info = Self::get_balance_update_amount(&pool_info)?;
-		pool_info.balances = new_balances_pool_info.balances.clone();
+		let new_balances_pool_info = Self::get_balance_update_amount(pool_info)?;
+		pool_info.balances = new_balances_pool_info.balances;
 		Self::deposit_event(Event::BalanceUpdated {
 			pool_id,
 			old_balances,
@@ -1163,7 +1163,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		let old_d: T::AtLeast64BitUnsigned = old_total_supply.into();
 		Self::update_balance(pool_id, pool_info)?;
 
-		let updated_total_supply_pool_info = Self::get_collect_yield_amount(&pool_info)?;
+		let updated_total_supply_pool_info = Self::get_collect_yield_amount(pool_info)?;
 		let new_d: T::AtLeast64BitUnsigned = updated_total_supply_pool_info.total_supply.into();
 
 		ensure!(new_d >= old_d, Error::<T>::InvalidPoolValue);

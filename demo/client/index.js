@@ -34,8 +34,10 @@ async function main() {
         10000000,
         20000000,
         50000000,
-        100,
-        alice.address));
+        10000,
+        alice.address,
+        alice.address,
+        1));
 
     let poolId = 0;
     // Detect asset id of lp asset of the created pool

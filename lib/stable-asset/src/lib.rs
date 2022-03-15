@@ -1128,6 +1128,14 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Pools::<T>::get(id)
 	}
 
+	/// Update the balance with underlying rebasing token balances
+    ///
+    /// # Arguments
+    ///
+    /// * `pool_id` - the ID of the pool
+	/// * `pool_info` - a mutable representation of the current pool state
+    ///
+
 	fn update_balance(
 		pool_id: StableAssetPoolId,
 		pool_info: &mut StableAssetPoolInfo<
@@ -1148,6 +1156,14 @@ impl<T: Config> StableAsset for Pallet<T> {
 		});
 		Ok(())
 	}
+
+	/// Collect the yield from the underlying rebasing token balances
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `pool_info` - a mutable representation of the current pool state
+	///
 
 	fn collect_yield(
 		pool_id: StableAssetPoolId,
@@ -1189,6 +1205,14 @@ impl<T: Config> StableAsset for Pallet<T> {
 		}
 		Ok(())
 	}
+
+	/// Collect the fees from user interactions
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `pool_info` - a mutable representation of the current pool state
+	///
 
 	fn collect_fee(
 		pool_id: StableAssetPoolId,
@@ -1233,6 +1257,22 @@ impl<T: Config> StableAsset for Pallet<T> {
 		}
 		Ok(())
 	}
+
+	/// Create a new pool
+	///
+	/// # Arguments
+	///
+	/// * `pool_asset` - the asset ID of the pool token
+	/// * `assets` - underlying assets of the pool
+	/// * `precisions` - 10**precision / 10**underlying_pool_token_precision
+	/// * `mint_fee` - mint fee percent
+	/// * `swap_fee` - swap fee percent
+	/// * `redeem_fee` - redeem fee percent
+	/// * `initial_a` - the A value of the pool
+	/// * `fee_recipient` - account ID for fees from user interactions
+	/// * `yield_recipient` - account ID for yield from rebasing tokens
+	/// * `precision` - the pool token precision
+	///
 
 	fn create_pool(
 		pool_asset: Self::AssetId,
@@ -1293,6 +1333,15 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
+	/// Mint the pool token
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amounts` - the amount of tokens to be put in the pool
+	/// * `min_mint_amount` - the amount of minimum pool token received
+	///
+
 	fn mint(
 		who: &Self::AccountId,
 		pool_id: StableAssetPoolId,
@@ -1346,6 +1395,18 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
+	/// Swap tokens
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `i` - the array index of the input token in StableAssetPoolInfo.assets
+	/// * `j` - the array index of the output token in StableAssetPoolInfo.assets
+	/// * `dx` - the amount of input token
+	/// * `min_dy` - the minimum amount of output token received
+	/// * `asset_length` - the length of array in StableAssetPoolInfo.assets
+	///
+
 	fn swap(
 		who: &Self::AccountId,
 		pool_id: StableAssetPoolId,
@@ -1397,6 +1458,15 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Ok(())
 		})
 	}
+
+	/// Redeem the token proportionally
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amount` - the amount of token to be redeemed
+	/// * `min_redeem_amounts` - the minimum amounts of redeemed token received
+	///
 
 	fn redeem_proportion(
 		who: &Self::AccountId,
@@ -1453,6 +1523,17 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Ok(())
 		})
 	}
+
+	/// Redeem the token into a single token
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amount` - the amount of token to be redeemed
+	/// * `i` - the array index of the input token in StableAssetPoolInfo.assets
+	/// * `min_redeem_amount` - the minimum amount of redeemed token received
+	/// * `asset_length` - the length of array in StableAssetPoolInfo.assets
+	///
 
 	fn redeem_single(
 		who: &Self::AccountId,
@@ -1518,6 +1599,15 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
+	/// Redeem the token into a single token
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amounts` - the amounts of underlying token to be received
+	/// * `max_redeem_amount` - the maximum amount of pool token to be redeemed
+	///
+
 	fn redeem_multi(
 		who: &Self::AccountId,
 		pool_id: StableAssetPoolId,
@@ -1570,6 +1660,15 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Ok(())
 		})
 	}
+
+	/// Redeem the token into a single token
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `a` - the new A value
+	/// * `future_a_block` - the block number for the above A to take effect
+	///
 
 	fn modify_a(
 		pool_id: StableAssetPoolId,

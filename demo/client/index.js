@@ -30,59 +30,53 @@ async function main() {
 
     console.info('Creating pool...');
     await includedInBlock(alice, api.tx.stableAsset.createPool(assetC, pooledAssets,
-        [10000000000, 10000000000],
+        [1, 1],
         10000000,
         20000000,
         50000000,
         10000,
         alice.address,
         alice.address,
-        1));
+        10000000000));
 
     let poolId = 0;
     // Detect asset id of lp asset of the created pool
     let poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
-    console.info(`Total Supply: ${poolInfo.total_supply.toHuman()}`);
-    console.info(`Account Id: ${poolInfo.account_id.toHuman()}`);
+    console.info(`Total Supply: ${poolInfo.totalSupply.toHuman()}`);
+    console.info(`Account Id: ${poolInfo.accountId.toHuman()}`);
     console.info(`Balances: ${poolInfo.balances.toHuman()}`);
 
     console.info('Setting minter/burner');
-    await includedInBlock(alice, api.tx.assets.setTeam(assetC, poolInfo.module_id, poolInfo.module_id, alice.address));
+    await includedInBlock(alice, api.tx.assets.setTeam(assetC, poolInfo.accountId, poolInfo.accountId, alice.address));
 
     console.info('Minting');
     await includedInBlock(alice, api.tx.stableAsset.mint(poolId, [10000000, 20000000], 0));
     poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
-    console.info(`Total Supply: ${poolInfo.total_supply.toHuman()}`);
+    console.info(`Total Supply: ${poolInfo.totalSupply.toHuman()}`);
     console.info(`Balances: ${poolInfo.balances.toHuman()}`);
 
     console.info('Swapping');
-    await includedInBlock(alice, api.tx.stableAsset.swap(poolId, 0, 1, 5000000, 0));
+    await includedInBlock(alice, api.tx.stableAsset.swap(poolId, 0, 1, 5000000, 0, 2));
     poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
-    console.info(`Total Supply: ${poolInfo.total_supply.toHuman()}`);
-    console.info(`Balances: ${poolInfo.balances.toHuman()}`);
-
-    console.info('Collecting fee');
-    await includedInBlock(alice, api.tx.stableAsset.collectFee(poolId));
-    poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
-    console.info(`Total Supply: ${poolInfo.total_supply.toHuman()}`);
+    console.info(`Total Supply: ${poolInfo.totalSupply.toHuman()}`);
     console.info(`Balances: ${poolInfo.balances.toHuman()}`);
 
     console.info('Redeeming proportion');
-    await includedInBlock(alice, api.tx.stableAsset.redeemProportion(poolId, "10000000000000000", [0, 0]));
+    await includedInBlock(alice, api.tx.stableAsset.redeemProportion(poolId, "100000", [0, 0]));
     poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
-    console.info(`Total Supply: ${poolInfo.total_supply.toHuman()}`);
+    console.info(`Total Supply: ${poolInfo.totalSupply.toHuman()}`);
     console.info(`Balances: ${poolInfo.balances.toHuman()}`);
 
     console.info('Redeeming single');
-    await includedInBlock(alice, api.tx.stableAsset.redeemSingle(poolId, "10000000000000000", 0, 0));
+    await includedInBlock(alice, api.tx.stableAsset.redeemSingle(poolId, "100000", 0, 0, 2));
     poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
-    console.info(`Total Supply: ${poolInfo.total_supply.toHuman()}`);
+    console.info(`Total Supply: ${poolInfo.totalSupply.toHuman()}`);
     console.info(`Balances: ${poolInfo.balances.toHuman()}`);
 
     console.info('Redeeming multi');
-    await includedInBlock(alice, api.tx.stableAsset.redeemMulti(poolId, [500000, 500000], "1100000000000000000"));
+    await includedInBlock(alice, api.tx.stableAsset.redeemMulti(poolId, [50000, 50000], "1100000000000000000"));
     poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
-    console.info(`Total Supply: ${poolInfo.total_supply.toHuman()}`);
+    console.info(`Total Supply: ${poolInfo.totalSupply.toHuman()}`);
     console.info(`Balances: ${poolInfo.balances.toHuman()}`);
 }
 

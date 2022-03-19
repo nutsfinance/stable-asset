@@ -1599,7 +1599,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
-	/// Redeem the token into a single token
+	/// Redeem the token into desired underlying tokens
 	///
 	/// # Arguments
 	///
@@ -1661,7 +1661,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
-	/// Redeem the token into a single token
+	/// Modify A value
 	///
 	/// # Arguments
 	///

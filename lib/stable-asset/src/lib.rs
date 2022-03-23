@@ -1129,12 +1129,12 @@ impl<T: Config> StableAsset for Pallet<T> {
 	}
 
 	/// Update the balance with underlying rebasing token balances
-    ///
-    /// # Arguments
-    ///
-    /// * `pool_id` - the ID of the pool
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
 	/// * `pool_info` - a mutable representation of the current pool state
-    ///
+	///
 
 	fn update_balance(
 		pool_id: StableAssetPoolId,

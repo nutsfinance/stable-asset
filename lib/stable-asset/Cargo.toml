@@ -12,18 +12,18 @@ readme = "README.md"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "2.3.1", default-features = false, features = ["derive"] }
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+scale-info = { version = "2.0.1", default-features = false, features = ["derive"] }
 
 [dependencies.frame-support]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "22d40c761a985482f93bbbea5ba4199bdba74f8e"
+rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
 
 [dependencies.frame-system]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "22d40c761a985482f93bbbea5ba4199bdba74f8e"
+rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
 
 [dev-dependencies]
 serde = { version = "1.0.101" }
@@ -31,27 +31,27 @@ serde = { version = "1.0.101" }
 [dev-dependencies.sp-core]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "22d40c761a985482f93bbbea5ba4199bdba74f8e"
+rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
 
 [dev-dependencies.sp-io]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "22d40c761a985482f93bbbea5ba4199bdba74f8e"
+rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
 
 [dependencies.sp-std]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "22d40c761a985482f93bbbea5ba4199bdba74f8e"
+rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
 
 [dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "22d40c761a985482f93bbbea5ba4199bdba74f8e"
+rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
 
 [dev-dependencies.pallet-balances]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-rev = "22d40c761a985482f93bbbea5ba4199bdba74f8e"
+rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
 
 [features]
 default = ["std"]

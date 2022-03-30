@@ -139,6 +139,69 @@ fn create_pool_asset_not_enough() {
 }
 
 #[test]
+fn modify_a_successful() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(coin0, coin1, pool_asset, swap_id) => {
+				assert_ok!(StableAsset::modify_a(Origin::signed(1), 0, 100, 100));
+				assert_eq!(
+					StableAsset::pools(0),
+					Some(StableAssetPoolInfo {
+						pool_asset,
+						assets: vec![coin0, coin1],
+						precisions: vec![10000000000u128, 10000000000u128],
+						mint_fee: 10000000u128,
+						swap_fee: 20000000u128,
+						redeem_fee: 50000000u128,
+						total_supply: 0u128,
+						a: 10000u128,
+						a_block: 0,
+						future_a: 100u128,
+						future_a_block: 100,
+						balances: vec![0, 0],
+						fee_recipient: 2,
+						account_id: swap_id,
+						yield_recipient: 1,
+						precision: 1000000000000000000u128,
+					})
+				);
+			}
+		}
+	});
+}
+
+#[test]
+fn modify_a_argument_error_failed() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(_coin0, _coin1, _pool_asset, _swap_id) => {
+				assert_noop!(
+					StableAsset::modify_a(Origin::signed(1), 0, 100, 0),
+					Error::<Test>::ArgumentsError
+				);
+			}
+		}
+	});
+}
+
+#[test]
+fn modify_a_pool_not_found() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(_coin0, _coin1, _pool_asset, _swap_id) => {
+				assert_noop!(
+					StableAsset::modify_a(Origin::signed(1), 1, 100, 1000),
+					Error::<Test>::PoolNotFound
+				);
+			}
+		}
+	});
+}
+
+#[test]
 fn mint_successful_equal_amounts() {
 	new_test_ext().execute_with(|| {
 		let pool_tokens = create_pool();

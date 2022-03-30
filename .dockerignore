@@ -1,6 +1,7 @@
-target
-node/target
-runtime/target
-pallets/stable-asset/target
+demo/target
+demo/node/target
+demo/runtime/target
+demo/pallets/stable-asset/target
+lib/stable-asset/target/
 client
 Dockerfile

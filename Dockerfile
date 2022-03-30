@@ -9,7 +9,7 @@ RUN rustup update nightly
 RUN rustup update stable
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 COPY . /stable-assset
-WORKDIR /stable-assset
+WORKDIR /stable-assset/demo
 RUN cargo build
 CMD cargo run --bin node -- --dev --ws-external
 EXPOSE 9944

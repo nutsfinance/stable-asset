@@ -51,7 +51,7 @@ Use your underlying asset system extrinsics to do so.
 Provide `createPool` extrinsic with pool asset, an array of asset IDs, precisions (defined as `10 ** (18 - token decimals)`), mint fee, swap fee, redeem fee, initial A, and fee recipient:
 
 ```javascript
-api.tx.stableAsset.createPool(poolAsset, assets, precisions, mintFee, swapFee, redeemFee, intialA, feeRecipient)
+api.tx.stableAsset.createPool(poolAsset, assets, precisions, mintFee, swapFee, redeemFee, intialA, feeRecipient, yieldRecipient, precision)
 ```
 
 ### Mint
@@ -95,7 +95,7 @@ api.tx.stableAsset.redeemMulti(poolId, amounts, maxAmount)
 ```
 
 ### Collect Fees
-This method is to collect fees for `swap` and rebalance the underlying assets. 
+This method is to collect fees for `swap` and rebalance the underlying assets.
 Provide `collectFee` extrinsic with poolID:
 
 ```javascript

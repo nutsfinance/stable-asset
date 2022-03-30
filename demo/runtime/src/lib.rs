@@ -109,6 +109,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
+	state_version: 0,
 };
 
 /// This determines the average expected block time that we are targetting.
@@ -199,6 +200,7 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 
 	type OnSetCode = ();
+	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 parameter_types! {
@@ -321,6 +323,7 @@ impl pallet_assets::Config for Runtime {
 	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
 	type Freezer = ();
 	type Extra = ();
+	type AssetAccountDeposit = ();
 }
 
 parameter_types! {

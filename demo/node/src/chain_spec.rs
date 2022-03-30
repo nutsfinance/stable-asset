@@ -1,6 +1,6 @@
 use node_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig,
-	WASM_BINARY,
+	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
+	SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -68,6 +68,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		None,
 		// Protocol ID
 		None,
+		None,
 		// Properties
 		None,
 		// Extensions
@@ -117,6 +118,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		None,
 		// Properties
 		None,
+		None,
 		// Extensions
 		None,
 	))
@@ -135,7 +137,6 @@ fn testnet_genesis(
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
 		},
-		transaction_payment: Default::default(),
 		balances: BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
@@ -148,8 +149,9 @@ fn testnet_genesis(
 		},
 		sudo: SudoConfig {
 			// Assign network admin rights.
-			key: root_key,
+			key: Some(root_key),
 		},
 		assets: Default::default(),
+		transaction_payment: Default::default(),
 	}
 }

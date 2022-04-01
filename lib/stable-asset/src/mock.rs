@@ -23,6 +23,7 @@ use frame_support::{
 		fungibles::{Inspect, Mutate, Transfer},
 		tokens::{DepositConsequence, WithdrawConsequence},
 		Currency, EnsureOrigin, Everything, OnUnbalanced,
+		ConstU16, ConstU32, ConstU64, ConstU128,
 	},
 	PalletId,
 };
@@ -48,11 +49,6 @@ frame_support::construct_runtime!(
 	}
 );
 
-parameter_types! {
-	pub const BlockHashCount: u64 = 250;
-	pub const SS58Prefix: u8 = 42;
-}
-
 pub type AccountId = u64;
 
 impl frame_system::Config for Test {
@@ -70,20 +66,16 @@ impl frame_system::Config for Test {
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = Event;
-	type BlockHashCount = BlockHashCount;
+	type BlockHashCount = ConstU64<250>;
 	type Version = ();
 	type PalletInfo = PalletInfo;
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
-	type SS58Prefix = SS58Prefix;
+	type SS58Prefix = ConstU16<42>;
 	type OnSetCode = ();
-	type MaxConsumers = frame_support::traits::ConstU32<16>;
-}
-
-parameter_types! {
-	pub const ExistentialDeposit: u64 = 1;
+	type MaxConsumers = ConstU32<16>;
 }
 
 impl pallet_balances::Config for Test {
@@ -91,18 +83,11 @@ impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
 	type Event = Event;
-	type ExistentialDeposit = ExistentialDeposit;
+	type ExistentialDeposit = ConstU128<1>;
 	type AccountStore = System;
 	type WeightInfo = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = ();
-}
-
-parameter_types! {
-	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
-	pub FeePrecision: u128 = 10000000000u128;
-	pub APrecision: u128 = 100u128;
-	pub PoolAssetLimit: u32 = 5u32;
 }
 
 pub type Balance = u128;
@@ -260,6 +245,10 @@ impl crate::traits::ValidateAssetId<i64> for EnsurePoolAssetId {
 	}
 }
 
+parameter_types! {
+	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
+}
+
 impl stable_asset::Config for Test {
 	type Event = Event;
 	type AssetId = i64;
@@ -268,9 +257,9 @@ impl stable_asset::Config for Test {
 	type PalletId = StableAssetPalletId;
 
 	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
-	type FeePrecision = FeePrecision;
-	type APrecision = APrecision;
-	type PoolAssetLimit = PoolAssetLimit;
+	type FeePrecision = ConstU128<10_000_000_000>;
+	type APrecision = ConstU128<100>;
+	type PoolAssetLimit = ConstU32<5>;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;

@@ -103,6 +103,7 @@ parameter_types! {
 	pub FeePrecision: u128 = 10000000000u128;
 	pub APrecision: u128 = 100u128;
 	pub PoolAssetLimit: u32 = 5u32;
+	pub SwapExactOverAmount: u128 = 100u128;
 }
 
 pub type Balance = u128;
@@ -271,6 +272,7 @@ impl stable_asset::Config for Test {
 	type FeePrecision = FeePrecision;
 	type APrecision = APrecision;
 	type PoolAssetLimit = PoolAssetLimit;
+	type SwapExactOverAmount = SwapExactOverAmount;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;

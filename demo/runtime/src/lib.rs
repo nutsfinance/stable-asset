@@ -331,6 +331,7 @@ parameter_types! {
 	pub FeePrecision: u128 = 10000000000u128;
 	pub APrecision: u128 = 100u128;
 	pub PoolAssetLimit: u32 = 5u32;
+	pub SwapExactOverAmount: u128 = 100u128;
 }
 
 type AtLeast64BitUnsigned = u128;
@@ -459,6 +460,7 @@ impl nutsfinance_stable_asset::Config for Runtime {
 	type FeePrecision = FeePrecision;
 	type APrecision = APrecision;
 	type PoolAssetLimit = PoolAssetLimit;
+	type SwapExactOverAmount = SwapExactOverAmount;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;

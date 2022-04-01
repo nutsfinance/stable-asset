@@ -17,41 +17,41 @@ scale-info = { version = "2.0.1", default-features = false, features = ["derive"
 
 [dependencies.frame-support]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.18"
 
 [dependencies.frame-system]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.18"
 
 [dev-dependencies]
 serde = { version = "1.0.101" }
 
 [dev-dependencies.sp-core]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.18"
 
 [dev-dependencies.sp-io]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.18"
 
 [dependencies.sp-std]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.18"
 
 [dependencies.sp-runtime]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.18"
 
 [dev-dependencies.pallet-balances]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-rev = "fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.18"
 
 [features]
 default = ["std"]

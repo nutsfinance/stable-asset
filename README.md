@@ -63,17 +63,17 @@ Follow these steps to register required custom types:
 
 * In the main menu choose Settings tab;
 * In the Settings submenu choose Developer tab;
-* Copy content of the [custom-types.json](custom-types.json) file into text box on the page;
+* Copy content of the [custom-types.json](demo/custom-types.json) file into text box on the page;
 * Press Save button.
 
 ### Example Client
 
 Example client connects to the clean dev node and performs various operations with `nutsfinance-stable-asset` pallet.
-See [this readme](client/README.md) for details.
+See [this readme](demo/client/README.md) for details.
 
 ## Using the Pallet
 
-- See [Client API](client/README.md#client-api) for how to use the pallet from the client perspective.
+- See [Client API](demo/client/README.md#client-api) for how to use the pallet from the client perspective.
 
 ## Development Roadmap
 

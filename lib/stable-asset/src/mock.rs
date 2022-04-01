@@ -22,8 +22,7 @@ use frame_support::{
 	traits::{
 		fungibles::{Inspect, Mutate, Transfer},
 		tokens::{DepositConsequence, WithdrawConsequence},
-		Currency, EnsureOrigin, Everything, OnUnbalanced,
-		ConstU16, ConstU32, ConstU64, ConstU128,
+		ConstU128, ConstU16, ConstU32, ConstU64, Currency, EnsureOrigin, Everything, OnUnbalanced,
 	},
 	PalletId,
 };

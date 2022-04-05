@@ -33,7 +33,7 @@ pub mod weights;
 
 use crate::traits::StableAsset;
 use frame_support::codec::{Decode, Encode};
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::ensure;
 use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 use frame_support::{traits::Get, weights::Weight};
@@ -49,22 +49,22 @@ const NUMBER_OF_ITERATIONS_TO_CONVERGE: i32 = 255; // the number of iterations t
 
 #[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug, TypeInfo)]
 pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId, BlockNumber> {
-	pool_asset: AssetId,
-	assets: Vec<AssetId>,
-	precisions: Vec<AtLeast64BitUnsigned>,
-	mint_fee: AtLeast64BitUnsigned,
-	swap_fee: AtLeast64BitUnsigned,
-	redeem_fee: AtLeast64BitUnsigned,
-	total_supply: Balance,
-	a: AtLeast64BitUnsigned,
-	a_block: BlockNumber,
-	future_a: AtLeast64BitUnsigned,
-	future_a_block: BlockNumber,
-	balances: Vec<Balance>,
-	fee_recipient: AccountId,
-	account_id: AccountId,
-	yield_recipient: AccountId,
-	precision: AtLeast64BitUnsigned,
+	pub pool_asset: AssetId,
+	pub assets: Vec<AssetId>,
+	pub precisions: Vec<AtLeast64BitUnsigned>,
+	pub mint_fee: AtLeast64BitUnsigned,
+	pub swap_fee: AtLeast64BitUnsigned,
+	pub redeem_fee: AtLeast64BitUnsigned,
+	pub total_supply: Balance,
+	pub a: AtLeast64BitUnsigned,
+	pub a_block: BlockNumber,
+	pub future_a: AtLeast64BitUnsigned,
+	pub future_a_block: BlockNumber,
+	pub balances: Vec<Balance>,
+	pub fee_recipient: AccountId,
+	pub account_id: AccountId,
+	pub yield_recipient: AccountId,
+	pub precision: AtLeast64BitUnsigned,
 }
 
 pub trait WeightInfo {
@@ -78,8 +78,8 @@ pub trait WeightInfo {
 }
 
 pub mod traits {
-	use crate::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
-	use frame_support::dispatch::DispatchResult;
+	use crate::{PoolTokenIndex, RedeemProportionResult, StableAssetPoolId, StableAssetPoolInfo, SwapResult};
+	use frame_support::dispatch::{DispatchError, DispatchResult};
 	use sp_std::prelude::*;
 
 	pub trait ValidateAssetId<AssetId> {
@@ -135,7 +135,7 @@ pub mod traits {
 			dx: Self::Balance,
 			min_dy: Self::Balance,
 			asset_length: u32,
-		) -> DispatchResult;
+		) -> sp_std::result::Result<(Self::Balance, Self::Balance), DispatchError>;
 
 		fn redeem_proportion(
 			who: &Self::AccountId,
@@ -198,6 +198,74 @@ pub mod traits {
 			a: Self::AtLeast64BitUnsigned,
 			future_a_block: Self::BlockNumber,
 		) -> DispatchResult;
+
+		fn get_collect_yield_amount(
+			pool_info: &StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		) -> Option<
+			StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		>;
+
+		fn get_balance_update_amount(
+			pool_info: &StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		) -> Option<
+			StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		>;
+
+		fn get_redeem_proportion_amount(
+			pool_info: &StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+			amount_bal: Self::Balance,
+		) -> Option<RedeemProportionResult<Self::Balance>>;
+
+		fn get_best_route(
+			input_asset: Self::AssetId,
+			output_asset: Self::AssetId,
+			limit: Self::Balance,
+		) -> Option<
+			StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		>;
+
+		fn get_swap_amount_exact(
+			pool_id: StableAssetPoolId,
+			input_index: PoolTokenIndex,
+			output_index: PoolTokenIndex,
+			dy_bal: Self::Balance,
+		) -> Option<SwapResult<Self::Balance>>;
 	}
 }
 
@@ -245,6 +313,8 @@ pub mod pallet {
 		type PalletId: Get<PalletId>;
 		#[pallet::constant]
 		type FeePrecision: Get<Self::AtLeast64BitUnsigned>;
+		#[pallet::constant]
+		type SwapExactOverAmount: Get<Self::AtLeast64BitUnsigned>;
 		#[pallet::constant]
 		type APrecision: Get<Self::AtLeast64BitUnsigned>;
 		#[pallet::constant]
@@ -394,19 +464,20 @@ pub mod pallet {
 	}
 
 	#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
-	pub struct SwapResult<T: Config> {
-		pub dy: T::Balance,
-		pub y: T::Balance,
-		pub balance_i: T::Balance,
+	pub struct SwapResult<Balance> {
+		pub dx: Balance,
+		pub dy: Balance,
+		pub y: Balance,
+		pub balance_i: Balance,
 	}
 
 	#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
-	pub struct RedeemProportionResult<T: Config> {
-		pub amounts: Vec<T::Balance>,
-		pub balances: Vec<T::Balance>,
-		pub fee_amount: T::Balance,
-		pub total_supply: T::Balance,
-		pub redeem_amount: T::Balance,
+	pub struct RedeemProportionResult<Balance> {
+		pub amounts: Vec<Balance>,
+		pub balances: Vec<Balance>,
+		pub fee_amount: Balance,
+		pub total_supply: Balance,
+		pub redeem_amount: Balance,
 	}
 
 	#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
@@ -494,7 +565,8 @@ pub mod pallet {
 			asset_length: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			<Self as StableAsset>::swap(&who, pool_id, i, j, dx, min_dy, asset_length)
+			<Self as StableAsset>::swap(&who, pool_id, i, j, dx, min_dy, asset_length)?;
+			Ok(())
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_proportion(min_redeem_amounts.len() as u32))]
@@ -748,7 +820,7 @@ impl<T: Config> Pallet<T> {
 		input_index: PoolTokenIndex,
 		output_index: PoolTokenIndex,
 		dx_bal: T::Balance,
-	) -> Result<SwapResult<T>, Error<T>> {
+	) -> Result<SwapResult<T::Balance>, Error<T>> {
 		let zero: T::AtLeast64BitUnsigned = Zero::zero();
 		let one: T::AtLeast64BitUnsigned = One::one();
 		let balance_size: usize = pool_info.balances.len();
@@ -802,7 +874,65 @@ impl<T: Config> Pallet<T> {
 			dy = dy.checked_sub(&fee_amount).ok_or(Error::<T>::Math)?;
 		}
 		Ok(SwapResult {
+			dx: dx_bal,
 			dy: dy.into(),
+			y: y.into(),
+			balance_i: balances[input_index_usize].into(),
+		})
+	}
+
+	pub(crate) fn get_swap_amount_exact(
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		input_index: PoolTokenIndex,
+		output_index: PoolTokenIndex,
+		dy_bal: T::Balance,
+	) -> Option<SwapResult<T::Balance>> {
+		let zero: T::AtLeast64BitUnsigned = Zero::zero();
+		let one: T::AtLeast64BitUnsigned = One::one();
+		let balance_size: usize = pool_info.balances.len();
+		let mut dy: T::AtLeast64BitUnsigned = dy_bal.into();
+		let input_index_usize = input_index as usize;
+		let output_index_usize = output_index as usize;
+		if input_index == output_index {
+			return None;
+		}
+		if dy <= zero {
+			return None;
+		}
+		if input_index_usize >= balance_size {
+			return None;
+		}
+		if output_index_usize >= balance_size {
+			return None;
+		}
+		let fee_denominator: T::AtLeast64BitUnsigned = T::FeePrecision::get();
+		let swap_exact_over_amount = T::SwapExactOverAmount::get();
+		if pool_info.swap_fee > zero {
+			let diff = fee_denominator.checked_sub(&pool_info.swap_fee)?;
+			dy = dy.checked_mul(&fee_denominator)?.checked_div(&diff)?;
+		}
+
+		let a: T::AtLeast64BitUnsigned = Self::get_a(
+			pool_info.a,
+			pool_info.a_block,
+			pool_info.future_a,
+			pool_info.future_a_block,
+		)?;
+		let d: T::AtLeast64BitUnsigned = pool_info.total_supply.into();
+		let mut balances: Vec<T::AtLeast64BitUnsigned> =
+			Self::convert_vec_balance_to_number(pool_info.balances.clone());
+		balances[output_index_usize] =
+			balances[output_index_usize].checked_sub(&dy.checked_mul(&pool_info.precisions[output_index_usize])?)?;
+		let y: T::AtLeast64BitUnsigned = Self::get_y(&balances, input_index, d, a)?;
+		let dx: T::AtLeast64BitUnsigned = y
+			.checked_sub(&balances[input_index_usize])?
+			.checked_sub(&one)?
+			.checked_div(&pool_info.precisions[output_index_usize])?
+			.checked_add(&swap_exact_over_amount)?;
+
+		Some(SwapResult {
+			dx: dx.into(),
+			dy: dy_bal,
 			y: y.into(),
 			balance_i: balances[input_index_usize].into(),
 		})
@@ -811,7 +941,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn get_redeem_proportion_amount(
 		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 		amount_bal: T::Balance,
-	) -> Result<RedeemProportionResult<T>, Error<T>> {
+	) -> Result<RedeemProportionResult<T::Balance>, Error<T>> {
 		let mut amount: T::AtLeast64BitUnsigned = amount_bal.into();
 		let zero: T::AtLeast64BitUnsigned = Zero::zero();
 
@@ -1014,6 +1144,46 @@ impl<T: Config> Pallet<T> {
 			})
 		}
 	}
+
+	pub(crate) fn get_collect_yield_amount(
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+	) -> Result<
+		StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		Error<T>,
+	> {
+		let a: T::AtLeast64BitUnsigned = Self::get_a(
+			pool_info.a,
+			pool_info.a_block,
+			pool_info.future_a,
+			pool_info.future_a_block,
+		)
+		.ok_or(Error::<T>::Math)?;
+		let balances: Vec<T::AtLeast64BitUnsigned> = Self::convert_vec_balance_to_number(pool_info.balances.clone());
+		let new_d: T::AtLeast64BitUnsigned = Self::get_d(&balances, a).ok_or(Error::<T>::Math)?;
+		let mut cloned_stable_asset_info = pool_info.clone();
+		cloned_stable_asset_info.total_supply = new_d.into();
+		Ok(cloned_stable_asset_info)
+	}
+
+	pub(crate) fn get_balance_update_amount(
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+	) -> Result<
+		StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+		Error<T>,
+	> {
+		let mut updated_balances = pool_info.balances.clone();
+		for (i, balance) in updated_balances.iter_mut().enumerate() {
+			let balance_of: T::AtLeast64BitUnsigned =
+				T::Assets::balance(pool_info.assets[i], &pool_info.account_id).into();
+			*balance = balance_of
+				.checked_mul(&pool_info.precisions[i])
+				.ok_or(Error::<T>::Math)?
+				.into();
+		}
+		let mut cloned_stable_asset_info = pool_info.clone();
+		cloned_stable_asset_info.balances = updated_balances;
+		Ok(cloned_stable_asset_info)
+	}
 }
 
 impl<T: Config> StableAsset for Pallet<T> {
@@ -1041,6 +1211,13 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Pools::<T>::get(id)
 	}
 
+	/// Update the balance with underlying rebasing token balances
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `pool_info` - a mutable representation of the current pool state
+
 	fn update_balance(
 		pool_id: StableAssetPoolId,
 		pool_info: &mut StableAssetPoolInfo<
@@ -1052,14 +1229,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 		>,
 	) -> DispatchResult {
 		let old_balances = pool_info.balances.clone();
-		for (i, balance) in pool_info.balances.iter_mut().enumerate() {
-			let balance_of: Self::AtLeast64BitUnsigned =
-				T::Assets::balance(pool_info.assets[i], &pool_info.account_id).into();
-			*balance = balance_of
-				.checked_mul(&pool_info.precisions[i])
-				.ok_or(Error::<T>::Math)?
-				.into();
-		}
+		let new_balances_pool_info = Self::get_balance_update_amount(pool_info)?;
+		pool_info.balances = new_balances_pool_info.balances;
 		Self::deposit_event(Event::BalanceUpdated {
 			pool_id,
 			old_balances,
@@ -1067,6 +1238,13 @@ impl<T: Config> StableAsset for Pallet<T> {
 		});
 		Ok(())
 	}
+
+	/// Collect the yield from the underlying rebasing token balances
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `pool_info` - a mutable representation of the current pool state
 
 	fn collect_yield(
 		pool_id: StableAssetPoolId,
@@ -1078,18 +1256,12 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Self::BlockNumber,
 		>,
 	) -> DispatchResult {
-		let a: T::AtLeast64BitUnsigned = Self::get_a(
-			pool_info.a,
-			pool_info.a_block,
-			pool_info.future_a,
-			pool_info.future_a_block,
-		)
-		.ok_or(Error::<T>::Math)?;
 		let old_total_supply = pool_info.total_supply;
 		let old_d: T::AtLeast64BitUnsigned = old_total_supply.into();
 		Self::update_balance(pool_id, pool_info)?;
-		let balances: Vec<T::AtLeast64BitUnsigned> = Self::convert_vec_balance_to_number(pool_info.balances.clone());
-		let new_d: T::AtLeast64BitUnsigned = Self::get_d(&balances, a).ok_or(Error::<T>::Math)?;
+
+		let updated_total_supply_pool_info = Self::get_collect_yield_amount(pool_info)?;
+		let new_d: T::AtLeast64BitUnsigned = updated_total_supply_pool_info.total_supply.into();
 
 		ensure!(new_d >= old_d, Error::<T>::InvalidPoolValue);
 		if new_d > old_d {
@@ -1100,7 +1272,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				pool_info.future_a_block,
 			)
 			.ok_or(Error::<T>::Math)?;
-			let yield_amount = new_d - old_d;
+			let yield_amount: T::AtLeast64BitUnsigned = new_d - old_d;
 			T::Assets::mint_into(pool_info.pool_asset, &pool_info.yield_recipient, yield_amount.into())?;
 			pool_info.total_supply = new_d.into();
 			Self::deposit_event(Event::YieldCollected {
@@ -1114,6 +1286,13 @@ impl<T: Config> StableAsset for Pallet<T> {
 		}
 		Ok(())
 	}
+
+	/// Collect the fees from user interactions
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `pool_info` - a mutable representation of the current pool state
 
 	fn collect_fee(
 		pool_id: StableAssetPoolId,
@@ -1158,6 +1337,21 @@ impl<T: Config> StableAsset for Pallet<T> {
 		}
 		Ok(())
 	}
+
+	/// Create a new pool
+	///
+	/// # Arguments
+	///
+	/// * `pool_asset` - the asset ID of the pool token
+	/// * `assets` - underlying assets of the pool
+	/// * `precisions` - 10**precision / 10**underlying_pool_token_precision
+	/// * `mint_fee` - mint fee percent
+	/// * `swap_fee` - swap fee percent
+	/// * `redeem_fee` - redeem fee percent
+	/// * `initial_a` - the A value of the pool
+	/// * `fee_recipient` - account ID for fees from user interactions
+	/// * `yield_recipient` - account ID for yield from rebasing tokens
+	/// * `precision` - the pool token precision
 
 	fn create_pool(
 		pool_asset: Self::AssetId,
@@ -1218,6 +1412,14 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
+	/// Mint the pool token
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amounts` - the amount of tokens to be put in the pool
+	/// * `min_mint_amount` - the amount of minimum pool token received
+
 	fn mint(
 		who: &Self::AccountId,
 		pool_id: StableAssetPoolId,
@@ -1271,6 +1473,17 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
+	/// Swap tokens
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `i` - the array index of the input token in StableAssetPoolInfo.assets
+	/// * `j` - the array index of the output token in StableAssetPoolInfo.assets
+	/// * `dx` - the amount of input token
+	/// * `min_dy` - the minimum amount of output token received
+	/// * `asset_length` - the length of array in StableAssetPoolInfo.assets
+
 	fn swap(
 		who: &Self::AccountId,
 		pool_id: StableAssetPoolId,
@@ -1279,49 +1492,65 @@ impl<T: Config> StableAsset for Pallet<T> {
 		dx: Self::Balance,
 		min_dy: Self::Balance,
 		asset_length: u32,
-	) -> DispatchResult {
-		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			let asset_length_usize = asset_length as usize;
-			ensure!(asset_length_usize == pool_info.assets.len(), Error::<T>::ArgumentsError);
-			Self::collect_yield(pool_id, pool_info)?;
-			let SwapResult { dy, y, balance_i } = Self::get_swap_amount(pool_info, i, j, dx)?;
-			ensure!(dy >= min_dy, Error::<T>::SwapUnderMin);
-			let mut balances = pool_info.balances.clone();
-			let i_usize = i as usize;
-			let j_usize = j as usize;
-			balances[i_usize] = balance_i;
-			balances[j_usize] = y;
-			T::Assets::transfer(pool_info.assets[i_usize], who, &pool_info.account_id, dx, false)?;
-			T::Assets::transfer(pool_info.assets[j_usize], &pool_info.account_id, who, dy, false)?;
-			let asset_i = pool_info.assets[i_usize];
-			let asset_j = pool_info.assets[j_usize];
+	) -> sp_std::result::Result<(Self::Balance, Self::Balance), DispatchError> {
+		Pools::<T>::try_mutate_exists(
+			pool_id,
+			|maybe_pool_info| -> sp_std::result::Result<(Self::Balance, Self::Balance), DispatchError> {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				let asset_length_usize = asset_length as usize;
+				ensure!(asset_length_usize == pool_info.assets.len(), Error::<T>::ArgumentsError);
+				Self::collect_yield(pool_id, pool_info)?;
+				let SwapResult {
+					dx: _,
+					dy,
+					y,
+					balance_i,
+				} = Self::get_swap_amount(pool_info, i, j, dx)?;
+				ensure!(dy >= min_dy, Error::<T>::SwapUnderMin);
+				let mut balances = pool_info.balances.clone();
+				let i_usize = i as usize;
+				let j_usize = j as usize;
+				balances[i_usize] = balance_i;
+				balances[j_usize] = y;
+				T::Assets::transfer(pool_info.assets[i_usize], who, &pool_info.account_id, dx, false)?;
+				T::Assets::transfer(pool_info.assets[j_usize], &pool_info.account_id, who, dy, false)?;
+				let asset_i = pool_info.assets[i_usize];
+				let asset_j = pool_info.assets[j_usize];
 
-			// Since the actual output amount is round down, collect fee should update the pool balances and
-			// total supply
-			Self::collect_fee(pool_id, pool_info)?;
-			let a: T::AtLeast64BitUnsigned = Self::get_a(
-				pool_info.a,
-				pool_info.a_block,
-				pool_info.future_a,
-				pool_info.future_a_block,
-			)
-			.ok_or(Error::<T>::Math)?;
-			Self::deposit_event(Event::TokenSwapped {
-				swapper: who.clone(),
-				pool_id,
-				a,
-				input_asset: asset_i,
-				output_asset: asset_j,
-				input_amount: dx,
-				min_output_amount: min_dy,
-				balances: pool_info.balances.clone(),
-				total_supply: pool_info.total_supply,
-				output_amount: dy,
-			});
-			Ok(())
-		})
+				// Since the actual output amount is round down, collect fee should update the pool balances and
+				// total supply
+				Self::collect_fee(pool_id, pool_info)?;
+				let a: T::AtLeast64BitUnsigned = Self::get_a(
+					pool_info.a,
+					pool_info.a_block,
+					pool_info.future_a,
+					pool_info.future_a_block,
+				)
+				.ok_or(Error::<T>::Math)?;
+				Self::deposit_event(Event::TokenSwapped {
+					swapper: who.clone(),
+					pool_id,
+					a,
+					input_asset: asset_i,
+					output_asset: asset_j,
+					input_amount: dx,
+					min_output_amount: min_dy,
+					balances: pool_info.balances.clone(),
+					total_supply: pool_info.total_supply,
+					output_amount: dy,
+				});
+				Ok((dx, dy))
+			},
+		)
 	}
+
+	/// Redeem the token proportionally
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amount` - the amount of token to be redeemed
+	/// * `min_redeem_amounts` - the minimum amounts of redeemed token received
 
 	fn redeem_proportion(
 		who: &Self::AccountId,
@@ -1378,6 +1607,16 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Ok(())
 		})
 	}
+
+	/// Redeem the token into a single token
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amount` - the amount of token to be redeemed
+	/// * `i` - the array index of the input token in StableAssetPoolInfo.assets
+	/// * `min_redeem_amount` - the minimum amount of redeemed token received
+	/// * `asset_length` - the length of array in StableAssetPoolInfo.assets
 
 	fn redeem_single(
 		who: &Self::AccountId,
@@ -1443,6 +1682,14 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
+	/// Redeem the token into desired underlying tokens
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amounts` - the amounts of underlying token to be received
+	/// * `max_redeem_amount` - the maximum amount of pool token to be redeemed
+
 	fn redeem_multi(
 		who: &Self::AccountId,
 		pool_id: StableAssetPoolId,
@@ -1496,6 +1743,14 @@ impl<T: Config> StableAsset for Pallet<T> {
 		})
 	}
 
+	/// Modify A value
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `a` - the new A value
+	/// * `future_a_block` - the block number for the above A to take effect
+
 	fn modify_a(
 		pool_id: StableAssetPoolId,
 		a: Self::AtLeast64BitUnsigned,
@@ -1523,5 +1778,81 @@ impl<T: Config> StableAsset for Pallet<T> {
 			});
 			Ok(())
 		})
+	}
+
+	fn get_collect_yield_amount(
+		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
+	) -> Option<StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>> {
+		Self::get_collect_yield_amount(pool_info).ok()
+	}
+
+	fn get_balance_update_amount(
+		pool_info: &StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+	) -> Option<
+		StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+	> {
+		Self::get_balance_update_amount(pool_info).ok()
+	}
+
+	fn get_redeem_proportion_amount(
+		pool_info: &StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+		amount_bal: Self::Balance,
+	) -> Option<RedeemProportionResult<T::Balance>> {
+		Self::get_redeem_proportion_amount(pool_info, amount_bal).ok()
+	}
+
+	fn get_best_route(
+		input_asset: Self::AssetId,
+		output_asset: Self::AssetId,
+		limit: Self::Balance,
+	) -> Option<
+		StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+	> {
+		Pools::<T>::iter()
+			.filter(|tuple| {
+				let pool_info = &tuple.1;
+				pool_info.assets.contains(&input_asset)
+					&& pool_info.assets.contains(&output_asset)
+					&& T::Assets::balance(output_asset, &pool_info.account_id) >= limit
+			})
+			.map(|tuple| tuple.1)
+			.last()
+	}
+
+	fn get_swap_amount_exact(
+		pool_id: StableAssetPoolId,
+		input_index: PoolTokenIndex,
+		output_index: PoolTokenIndex,
+		dy_bal: Self::Balance,
+	) -> Option<SwapResult<Self::Balance>> {
+		let pool_info_opt = Self::pool(pool_id);
+		match pool_info_opt {
+			Some(pool_info) => Self::get_swap_amount_exact(&pool_info, input_index, output_index, dy_bal),
+			None => None,
+		}
 	}
 }

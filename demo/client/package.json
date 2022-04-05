@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "private": true,
   "dependencies": {
-    "@polkadot/api": "^4.9.2",
+    "@polkadot/api": "^7.12.1",
     "bignumber.js": "^9.0.1"
   }
 }

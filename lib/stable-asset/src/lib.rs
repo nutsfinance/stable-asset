@@ -246,21 +246,37 @@ pub mod traits {
 			amount_bal: Self::Balance,
 		) -> Option<RedeemProportionResult<Self::Balance>>;
 
+		/// Get the best swap route in all pools
+		///  params:
+		/// - input_asset: the input asset.
+		/// - output_asset: the output asset.
+		/// - input_amount: the input amount of input asset.
 		fn get_best_route(
 			input_asset: Self::AssetId,
 			output_asset: Self::AssetId,
-			limit: Self::Balance,
-		) -> Option<
-			StableAssetPoolInfo<
-				Self::AssetId,
-				Self::AtLeast64BitUnsigned,
-				Self::Balance,
-				Self::AccountId,
-				Self::BlockNumber,
-			>,
-		>;
+			input_amount: Self::Balance,
+		) -> Option<(StableAssetPoolId, PoolTokenIndex, PoolTokenIndex, Self::Balance)>;
 
-		fn get_swap_amount_exact(
+		/// Get the swap result at exact input amount.
+		///  params:
+		/// - pool_id: the pool id.
+		/// - input_index: the asset index of input asset.
+		/// - output_index: the asset index of output asset.
+		/// - dx_bal: the input amount.
+		fn get_swap_output_amount(
+			pool_id: StableAssetPoolId,
+			input_index: PoolTokenIndex,
+			output_index: PoolTokenIndex,
+			dx_bal: Self::Balance,
+		) -> Option<SwapResult<Self::Balance>>;
+
+		/// Get the swap result at exact output amount.
+		///  params:
+		/// - pool_id: the pool id.
+		/// - input_index: the asset index of input asset.
+		/// - output_index: the asset index of output asset.
+		/// - dy_bal: the output amount.
+		fn get_swap_input_amount(
 			pool_id: StableAssetPoolId,
 			input_index: PoolTokenIndex,
 			output_index: PoolTokenIndex,
@@ -1822,28 +1838,58 @@ impl<T: Config> StableAsset for Pallet<T> {
 	fn get_best_route(
 		input_asset: Self::AssetId,
 		output_asset: Self::AssetId,
-		limit: Self::Balance,
-	) -> Option<
-		StableAssetPoolInfo<
-			Self::AssetId,
-			Self::AtLeast64BitUnsigned,
-			Self::Balance,
-			Self::AccountId,
-			Self::BlockNumber,
-		>,
-	> {
-		Pools::<T>::iter()
-			.filter(|tuple| {
-				let pool_info = &tuple.1;
-				pool_info.assets.contains(&input_asset)
-					&& pool_info.assets.contains(&output_asset)
-					&& T::Assets::balance(output_asset, &pool_info.account_id) >= limit
-			})
-			.map(|tuple| tuple.1)
-			.last()
+		input_amount: Self::Balance,
+	) -> Option<(StableAssetPoolId, PoolTokenIndex, PoolTokenIndex, Self::Balance)> {
+		let mut maybe_best: Option<(StableAssetPoolId, PoolTokenIndex, PoolTokenIndex, Self::Balance)> = None;
+
+		// iterater all pool
+		for (pool_id, pool_info) in Pools::<T>::iter() {
+			let maybe_input_index = pool_info
+				.assets
+				.iter()
+				.position(|&a| a == input_asset)
+				.map(|usize_index| usize_index as PoolTokenIndex);
+			let maybe_output_index = pool_info
+				.assets
+				.iter()
+				.position(|&a| a == output_asset)
+				.map(|usize_index| usize_index as PoolTokenIndex);
+
+			if let (Some(input_index), Some(output_index)) = (maybe_input_index, maybe_output_index) {
+				// calculate swap amount
+				if let Ok(swap_result) = Self::get_swap_amount(&pool_info, input_index, output_index, input_amount) {
+					// make sure pool can affort the output amount
+					if swap_result.dy <= T::Assets::balance(output_asset, &pool_info.account_id) {
+						if let Some((_, _, _, output_amount)) = maybe_best {
+							// this pool is better, replace maybe_best
+							if output_amount < swap_result.dy {
+								maybe_best = Some((pool_id, input_index, output_index, swap_result.dy))
+							}
+						} else {
+							maybe_best = Some((pool_id, input_index, output_index, swap_result.dy))
+						}
+					}
+				}
+			}
+		}
+
+		maybe_best
 	}
 
-	fn get_swap_amount_exact(
+	fn get_swap_output_amount(
+		pool_id: StableAssetPoolId,
+		input_index: PoolTokenIndex,
+		output_index: PoolTokenIndex,
+		dx_bal: Self::Balance,
+	) -> Option<SwapResult<Self::Balance>> {
+		let pool_info_opt = Self::pool(pool_id);
+		match pool_info_opt {
+			Some(pool_info) => Self::get_swap_amount(&pool_info, input_index, output_index, dx_bal).ok(),
+			None => None,
+		}
+	}
+
+	fn get_swap_input_amount(
 		pool_id: StableAssetPoolId,
 		input_index: PoolTokenIndex,
 		output_index: PoolTokenIndex,

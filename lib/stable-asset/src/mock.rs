@@ -244,6 +244,30 @@ impl crate::traits::ValidateAssetId<i64> for EnsurePoolAssetId {
 	}
 }
 
+pub struct XcmInterface;
+impl crate::traits::XcmInterface for XcmInterface {
+	type Balance = u128;
+	type AccountId = AccountId;
+	fn send_mint_call_to_xcm(
+		_account_id: Self::AccountId,
+		_pool_id: u32,
+		_amounts: Vec<Self::Balance>,
+		_min_mint_amount: Self::Balance,
+		_source_pool_id: u32,
+	) -> DispatchResult {
+		Ok(().into())
+	}
+
+	fn send_mint_result_to_xcm(
+		_account_id: Self::AccountId,
+		_source_pool_id: u32,
+		_mint_amount: Option<Self::Balance>,
+		_amounts: Vec<Self::Balance>,
+	) -> DispatchResult {
+		Ok(().into())
+	}
+}
+
 parameter_types! {
 	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
 }
@@ -263,6 +287,7 @@ impl stable_asset::Config for Test {
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;
+	type XcmInterface = XcmInterface;
 }
 
 // Build genesis storage according to the mock runtime.

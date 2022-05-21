@@ -31,7 +31,7 @@ mod tests;
 
 pub mod weights;
 
-use crate::traits::StableAsset;
+use crate::traits::{StableAsset, XcmInterface};
 use frame_support::codec::{Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::ensure;
@@ -75,6 +75,10 @@ pub trait WeightInfo {
 	fn redeem_proportion(u: u32) -> Weight;
 	fn redeem_single(u: u32) -> Weight;
 	fn redeem_multi(u: u32) -> Weight;
+	fn send_mint_to_xcm(u: u32) -> Weight;
+	fn process_xcm_mint(u: u32) -> Weight;
+	fn receive_mint_from_xcm() -> Weight;
+	fn update_xcm_asset() -> Weight;
 }
 
 pub mod traits {
@@ -84,6 +88,25 @@ pub mod traits {
 
 	pub trait ValidateAssetId<AssetId> {
 		fn validate(a: AssetId) -> bool;
+	}
+
+	pub trait XcmInterface {
+		type Balance;
+		type AccountId;
+		fn send_mint_call_to_xcm(
+			account_id: Self::AccountId,
+			target_pool_id: StableAssetPoolId,
+			amounts: Vec<Self::Balance>,
+			min_mint_amount: Self::Balance,
+			source_pool_id: StableAssetPoolId,
+		) -> DispatchResult;
+
+		fn send_mint_result_to_xcm(
+			account_id: Self::AccountId,
+			source_pool_id: StableAssetPoolId,
+			mint_amount: Option<Self::Balance>,
+			amounts: Vec<Self::Balance>,
+		) -> DispatchResult;
 	}
 
 	pub trait StableAsset {
@@ -282,15 +305,24 @@ pub mod traits {
 			output_index: PoolTokenIndex,
 			dy_bal: Self::Balance,
 		) -> Option<SwapResult<Self::Balance>>;
+
+		fn xcm_mint(
+			who: &Self::AccountId,
+			target_pool_id: StableAssetPoolId,
+			amounts: Vec<Self::Balance>,
+			min_mint_amount: Self::Balance,
+			source_pool_id: StableAssetPoolId,
+		) -> DispatchResult;
 	}
 }
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
-	use crate::traits::{StableAsset, ValidateAssetId};
+	use crate::traits::{StableAsset, ValidateAssetId, XcmInterface};
 	use crate::WeightInfo;
 	use frame_support::traits::tokens::fungibles;
+	use frame_support::traits::tokens::fungibles::*;
 	use frame_support::{
 		dispatch::{Codec, DispatchResult},
 		pallet_prelude::*,
@@ -298,7 +330,7 @@ pub mod pallet {
 		transactional, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
+	use sp_runtime::traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
 	use sp_std::prelude::*;
 
 	#[pallet::config]
@@ -337,6 +369,7 @@ pub mod pallet {
 		type PoolAssetLimit: Get<u32>;
 		type WeightInfo: WeightInfo;
 		type EnsurePoolAssetId: ValidateAssetId<Self::AssetId>;
+		type XcmInterface: XcmInterface<Balance = Self::Balance, AccountId = Self::AccountId>;
 
 		/// The origin which may create pool or modify pool.
 		type ListingOrigin: EnsureOrigin<Self::Origin>;
@@ -359,6 +392,10 @@ pub mod pallet {
 		StableAssetPoolId,
 		StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn pool_xcm_assets)]
+	pub type PoolXcmAssets<T: Config> = StorageMap<_, Blake2_128Concat, StableAssetPoolId, T::AssetId>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -633,6 +670,108 @@ pub mod pallet {
 		) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
 			<Self as StableAsset>::modify_a(pool_id, a, future_a_block)
+		}
+
+		#[pallet::weight(T::WeightInfo::update_xcm_asset())]
+		#[transactional]
+		pub fn update_xcm_asset(
+			origin: OriginFor<T>,
+			pool_id: StableAssetPoolId,
+			asset_id: T::AssetId,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin.clone())?;
+			PoolXcmAssets::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+				*maybe_pool_info = Some(asset_id);
+				Ok(())
+			})?;
+			Ok(().into())
+		}
+
+		#[pallet::weight(T::WeightInfo::send_mint_to_xcm(amounts.len() as u32))]
+		#[transactional]
+		pub fn send_mint_to_xcm(
+			origin: OriginFor<T>,
+			target_pool_id: StableAssetPoolId,
+			amounts: Vec<T::Balance>,
+			min_mint_amount: T::Balance,
+			source_pool_id: StableAssetPoolId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let pool_info = Pools::<T>::try_get(source_pool_id).map_err(|_x| Error::<T>::ArgumentsError)?;
+			let count = amounts.iter().filter(|x| **x > Zero::zero()).count();
+			ensure!(count <= 1, Error::<T>::ArgumentsError);
+			let amount = amounts
+				.iter()
+				.find(|x| **x > Zero::zero())
+				.ok_or(Error::<T>::ArgumentsError)?;
+			T::Assets::transfer(
+				pool_info.pool_asset,
+				&who,
+				&T::PalletId::get().into_account(),
+				*amount,
+				false,
+			)?;
+			T::XcmInterface::send_mint_call_to_xcm(who, target_pool_id, amounts, min_mint_amount, source_pool_id)?;
+			Ok(().into())
+		}
+
+		#[pallet::weight(T::WeightInfo::process_xcm_mint(amounts.len() as u32))]
+		#[transactional]
+		pub fn process_xcm_mint(
+			origin: OriginFor<T>,
+			account_id: T::AccountId,
+			target_pool_id: StableAssetPoolId,
+			amounts: Vec<T::Balance>,
+			min_mint_amount: T::Balance,
+			source_pool_id: StableAssetPoolId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let result = <Self as StableAsset>::xcm_mint(
+				&account_id,
+				target_pool_id,
+				amounts.clone(),
+				min_mint_amount,
+				source_pool_id,
+			);
+			if result.err().is_none() {
+				T::XcmInterface::send_mint_result_to_xcm(who, source_pool_id, None, amounts.clone())?;
+			}
+			result
+		}
+
+		#[pallet::weight(T::WeightInfo::receive_mint_from_xcm())]
+		#[transactional]
+		pub fn receive_mint_from_xcm(
+			origin: OriginFor<T>,
+			account_id: T::AccountId,
+			source_pool_id: StableAssetPoolId,
+			mint_amount_opt: Option<T::Balance>,
+			amounts: Vec<T::Balance>,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			let pool_info = Pools::<T>::try_get(source_pool_id).map_err(|_x| Error::<T>::ArgumentsError)?;
+			let mint_asset = PoolXcmAssets::<T>::try_get(source_pool_id).map_err(|_x| Error::<T>::ArgumentsError)?;
+			let count = amounts.iter().filter(|x| **x > Zero::zero()).count();
+			ensure!(count <= 1, Error::<T>::ArgumentsError);
+			let amount = amounts
+				.iter()
+				.find(|x| **x > Zero::zero())
+				.ok_or(Error::<T>::ArgumentsError)?;
+			match mint_amount_opt {
+				Some(mint_amount) => {
+					T::Assets::mint_into(mint_asset, &account_id, mint_amount.into())?;
+				}
+				None => {
+					T::Assets::transfer(
+						pool_info.pool_asset,
+						&T::PalletId::get().into_account(),
+						&account_id,
+						*amount,
+						false,
+					)?;
+				}
+			}
+			Ok(().into())
 		}
 	}
 }
@@ -1900,5 +2039,59 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Some(pool_info) => Self::get_swap_amount_exact(&pool_info, input_index, output_index, dy_bal),
 			None => None,
 		}
+	}
+
+	/// Xcm Mint the pool token
+	///
+	/// # Arguments
+	///
+	/// * `pool_id` - the ID of the pool
+	/// * `amounts` - the amount of tokens to be put in the pool
+	/// * `min_mint_amount` - the amount of minimum pool token received
+
+	fn xcm_mint(
+		who: &Self::AccountId,
+		target_pool_id: StableAssetPoolId,
+		amounts: Vec<Self::Balance>,
+		min_mint_amount: Self::Balance,
+		source_pool_id: StableAssetPoolId,
+	) -> DispatchResult {
+		Pools::<T>::try_mutate_exists(target_pool_id, |maybe_pool_info| -> DispatchResult {
+			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+			let MintResult {
+				mint_amount,
+				fee_amount,
+				balances,
+				total_supply,
+			} = Self::get_mint_amount(pool_info, &amounts)?;
+			let a: T::AtLeast64BitUnsigned = Self::get_a(
+				pool_info.a,
+				pool_info.a_block,
+				pool_info.future_a,
+				pool_info.future_a_block,
+			)
+			.ok_or(Error::<T>::Math)?;
+			ensure!(mint_amount >= min_mint_amount, Error::<T>::MintUnderMin);
+
+			let zero: T::Balance = Zero::zero();
+			if fee_amount > zero {
+				T::Assets::mint_into(pool_info.pool_asset, &pool_info.fee_recipient, fee_amount)?;
+			}
+			T::XcmInterface::send_mint_result_to_xcm(who.clone(), source_pool_id, Some(mint_amount), amounts.clone())?;
+			pool_info.total_supply = total_supply;
+			pool_info.balances = balances;
+			Self::deposit_event(Event::Minted {
+				minter: who.clone(),
+				pool_id: source_pool_id,
+				a,
+				input_amounts: amounts,
+				min_output_amount: min_mint_amount,
+				balances: pool_info.balances.clone(),
+				total_supply: pool_info.total_supply,
+				fee_amount,
+				output_amount: mint_amount,
+			});
+			Ok(())
+		})
 	}
 }

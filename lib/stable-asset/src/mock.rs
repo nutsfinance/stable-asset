@@ -266,6 +266,27 @@ impl crate::traits::XcmInterface for XcmInterface {
 	) -> DispatchResult {
 		Ok(().into())
 	}
+
+	fn send_redeem_single_call_to_xcm(
+		_account_id: Self::AccountId,
+		_target_pool_id: u32,
+		_amount: Self::Balance,
+		_i: u32,
+		_min_redeem_amount: Self::Balance,
+		_asset_length: u32,
+		_source_pool_id: u32,
+	) -> DispatchResult {
+		Ok(().into())
+	}
+
+	fn send_redeem_single_result_to_xcm(
+		_account_id: Self::AccountId,
+		_source_pool_id: u32,
+		_redeem_amount: Option<Self::Balance>,
+		_burn_amount: Self::Balance,
+	) -> DispatchResult {
+		Ok(().into())
+	}
 }
 
 parameter_types! {

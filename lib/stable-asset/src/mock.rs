@@ -190,7 +190,7 @@ impl Inspect<AccountId> for TestAssets {
 		todo!()
 	}
 
-	fn can_deposit(_asset: Self::AssetId, _who: &AccountId, _amount: Balance) -> DepositConsequence {
+	fn can_deposit(_asset: Self::AssetId, _who: &AccountId, _amount: Balance, _mint: bool) -> DepositConsequence {
 		todo!()
 	}
 

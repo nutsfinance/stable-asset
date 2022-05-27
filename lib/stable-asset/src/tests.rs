@@ -1066,3 +1066,252 @@ fn swap_exact_success() {
 		assert_eq!(result_two.dy >= amount, true);
 	});
 }
+
+#[test]
+fn stable_asset_swap_work() {
+    new_test_ext().execute_with(|| {
+        let pool_tokens = create_pool();
+        System::set_block_number(2);
+        match pool_tokens {
+            (coin0, coin1, pool_asset, swap_id) => {
+                let amounts = vec![10000000u128, 20000000u128];
+                assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+                assert_eq!(
+                    StableAsset::pools(0),
+                    Some(StableAssetPoolInfo {
+                        pool_asset,
+                        assets: vec![coin0, coin1],
+                        precisions: vec![10000000000u128, 10000000000u128],
+                        mint_fee: 10000000u128,
+                        swap_fee: 20000000u128,
+                        redeem_fee: 50000000u128,
+                        total_supply: 299906783104508635u128,
+                        a: 10000u128,
+                        a_block: 0,
+                        future_a: 10000u128,
+                        future_a_block: 0,
+                        balances: vec![99999990000000000u128, 199999990000000000u128],
+                        fee_recipient: 2,
+                        account_id: swap_id,
+                        yield_recipient: 1,
+                        precision: 1000000000000000000u128,
+                    })
+                );
+
+                assert_ok!(TestAssets::mint_into(coin0, &3, 100000000u128));
+                assert_ok!(TestAssets::mint_into(coin1, &3, 100000000u128));
+                assert_eq!(TestAssets::balance(coin0, &3), 100000000u128 - BALANCE_OFF);
+                assert_eq!(TestAssets::balance(coin1, &3), 100000000u128 - BALANCE_OFF);
+                assert_eq!(TestAssets::balance(coin0, &swap_id), 10000000u128 - BALANCE_OFF);
+                assert_eq!(TestAssets::balance(coin1, &swap_id), 20000000u128 - BALANCE_OFF);
+
+                assert_ok!(<StableAsset as crate::traits::StableAsset>::swap(&3, 0, 0, 1, 5000000u128, 0, 2));
+                assert_eq!(
+                    StableAsset::pools(0),
+                    Some(StableAssetPoolInfo {
+                        pool_asset,
+                        assets: vec![coin0, coin1],
+                        precisions: vec![10000000000u128, 10000000000u128],
+                        mint_fee: 10000000u128,
+                        swap_fee: 20000000u128,
+                        redeem_fee: 50000000u128,
+                        total_supply: 300006969999594867u128,
+                        a: 10000u128,
+                        a_block: 0,
+                        future_a: 10000u128,
+                        future_a_block: 0,
+                        balances: vec![149999990000000000u128, 150006980000000000u128],
+                        fee_recipient: 2,
+                        account_id: swap_id,
+                        yield_recipient: 1,
+                        precision: 1000000000000000000u128,
+                    })
+                );
+                assert_eq!(TestAssets::balance(coin0, &3), 95000000u128 - BALANCE_OFF);
+                assert_eq!(TestAssets::balance(coin1, &3), 104999301u128 - BALANCE_OFF);
+                assert_eq!(TestAssets::balance(coin0, &swap_id), 15000000u128 - BALANCE_OFF);
+                assert_eq!(TestAssets::balance(coin1, &swap_id), 15000699u128 - BALANCE_OFF);
+                assert_eq!(last_event(), Event::StableAsset(crate::pallet::Event::TokenSwapped {
+                    swapper: 3,
+                    pool_id: 0,
+                    input_asset: 0,
+                    output_asset: 1,
+                    input_amount: 5000000u128,
+                    output_amount: 4999301u128,
+                    a: 10000,
+                    balances: vec![149999990000000000u128, 150006980000000000u128],
+                    total_supply: 300006969999594867u128,
+                    min_output_amount: 0,
+                }));
+            }
+        }
+    });
+}
+
+#[test]
+fn stable_asset_get_best_route_work() {
+    new_test_ext().execute_with(|| {
+        let pool_tokens = create_pool();
+        match pool_tokens {
+            (coin0, coin1, pool_asset, swap_id) => {
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_best_route(coin0, coin1, 0), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_best_route(coin0, coin1, 5000000u128), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_best_route(coin1, coin0, 0), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_best_route(coin1, coin0, 5000000u128), None);
+
+                let amounts = vec![10000000u128, 20000000u128];
+                assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+                assert_eq!(
+                    StableAsset::pools(0),
+                    Some(StableAssetPoolInfo {
+                        pool_asset,
+                        assets: vec![coin0, coin1],
+                        precisions: vec![10000000000u128, 10000000000u128],
+                        mint_fee: 10000000u128,
+                        swap_fee: 20000000u128,
+                        redeem_fee: 50000000u128,
+                        total_supply: 299906783104508635u128,
+                        a: 10000u128,
+                        a_block: 0,
+                        future_a: 10000u128,
+                        future_a_block: 0,
+                        balances: vec![99999990000000000u128, 199999990000000000u128],
+                        fee_recipient: 2,
+                        account_id: swap_id,
+                        yield_recipient: 1,
+                        precision: 1000000000000000000u128,
+                    })
+                );
+
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_best_route(coin0, coin1, 0), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_best_route(coin0, coin1, 5000000u128), Some((0, 0, 1, 4999301u128)));
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_best_route(coin1, coin0, 0), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_best_route(coin1, coin0, 5000000u128), Some((0, 1, 0, 4940837u128)));
+            }
+        }
+    });
+}
+
+#[test]
+fn stable_asset_get_swap_output_amount_work() {
+    new_test_ext().execute_with(|| {
+        let pool_tokens = create_pool();
+        match pool_tokens {
+            (coin0, coin1, pool_asset, swap_id) => {
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_output_amount(0, 0, 1, 0), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_output_amount(0, 0, 1, 5000000u128), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_output_amount(0, 1, 0, 0), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_output_amount(0, 1, 0, 5000000u128), None);
+
+                let amounts = vec![10000000u128, 20000000u128];
+                assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+                assert_eq!(
+                    StableAsset::pools(0),
+                    Some(StableAssetPoolInfo {
+                        pool_asset,
+                        assets: vec![coin0, coin1],
+                        precisions: vec![10000000000u128, 10000000000u128],
+                        mint_fee: 10000000u128,
+                        swap_fee: 20000000u128,
+                        redeem_fee: 50000000u128,
+                        total_supply: 299906783104508635u128,
+                        a: 10000u128,
+                        a_block: 0,
+                        future_a: 10000u128,
+                        future_a_block: 0,
+                        balances: vec![99999990000000000u128, 199999990000000000u128],
+                        fee_recipient: 2,
+                        account_id: swap_id,
+                        yield_recipient: 1,
+                        precision: 1000000000000000000u128,
+                    })
+                );
+
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_output_amount(0, 0, 1, 0), None);
+                assert_eq!(
+                    <StableAsset as crate::traits::StableAsset>::get_swap_output_amount(0, 0, 1, 5000000u128),
+                    Some(crate::SwapResult{
+                        dx: 5000000,
+                        dy: 4999301,
+                        y: 149906793176551325,
+                        balance_i: 149999990000000000
+                    })
+                );
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_output_amount(0, 1, 0, 0), None);
+                assert_eq!(
+                    <StableAsset as crate::traits::StableAsset>::get_swap_output_amount(0, 1, 0, 5000000u128),
+                    Some(crate::SwapResult{
+                        dx: 5000000,
+                        dy: 4940837,
+                        y: 50492609734074204,
+                        balance_i: 249999990000000000
+                    })
+                );
+            }
+        }
+    });
+}
+
+#[test]
+fn stable_asset_get_swap_input_amount_work() {
+    new_test_ext().execute_with(|| {
+        let pool_tokens = create_pool();
+        match pool_tokens {
+            (coin0, coin1, pool_asset, swap_id) => {
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 0, 1, 0), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 0, 1, 4999301u128), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 0, 1, 20000000u128), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 1, 0, 0), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 1, 0, 4940837u128), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 1, 0, 10000000u128), None);
+
+                let amounts = vec![10000000u128, 20000000u128];
+                assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+                assert_eq!(
+                    StableAsset::pools(0),
+                    Some(StableAssetPoolInfo {
+                        pool_asset,
+                        assets: vec![coin0, coin1],
+                        precisions: vec![10000000000u128, 10000000000u128],
+                        mint_fee: 10000000u128,
+                        swap_fee: 20000000u128,
+                        redeem_fee: 50000000u128,
+                        total_supply: 299906783104508635u128,
+                        a: 10000u128,
+                        a_block: 0,
+                        future_a: 10000u128,
+                        future_a_block: 0,
+                        balances: vec![99999990000000000u128, 199999990000000000u128],
+                        fee_recipient: 2,
+                        account_id: swap_id,
+                        yield_recipient: 1,
+                        precision: 1000000000000000000u128,
+                    })
+                );
+
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 0, 1, 0), None);
+                assert_eq!(
+                    <StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 0, 1, 4999301u128),
+                    Some(crate::SwapResult{
+                        dx: 5000099,
+                        dy: 4999301,
+                        y: 149999983176530228,
+                        balance_i: 99999990000000000
+                    })
+                );
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 0, 1, 20000000u128), None);
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 1, 0, 0), None);
+                assert_eq!(
+                    <StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 1, 0, 4940837u128),
+                    Some(crate::SwapResult{
+                        dx: 5000099,
+                        dy: 4940837,
+                        y: 249999989728490676,
+                        balance_i: 199999990000000000
+                    })
+                );
+                assert_eq!(<StableAsset as crate::traits::StableAsset>::get_swap_input_amount(0, 1, 0, 10000000u128), None);
+            }
+        }
+    });
+}

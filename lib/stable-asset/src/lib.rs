@@ -1387,7 +1387,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		ensure!(assets.len() == precisions.len(), Error::<T>::ArgumentsMismatch);
 		PoolCount::<T>::try_mutate(|pool_count| -> DispatchResult {
 			let pool_id = *pool_count;
-			let swap_id: T::AccountId = T::PalletId::get().into_sub_account(pool_id);
+			let swap_id: T::AccountId = T::PalletId::get().into_sub_account_truncating(pool_id);
 			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 				ensure!(maybe_pool_info.is_none(), Error::<T>::InconsistentStorage);
 
@@ -1422,7 +1422,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				pool_id,
 				swap_id,
 				a: initial_a,
-				pallet_id: T::PalletId::get().into_account(),
+				pallet_id: T::PalletId::get().into_account_truncating(),
 			});
 			Ok(())
 		})

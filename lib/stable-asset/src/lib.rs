@@ -18,6 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![allow(deprecated)]
 
 extern crate sp_runtime;
 
@@ -295,7 +296,7 @@ pub mod pallet {
 		dispatch::{Codec, DispatchResult},
 		pallet_prelude::*,
 		traits::EnsureOrigin,
-		PalletId,
+		transactional, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
@@ -527,6 +528,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(T::WeightInfo::create_pool())]
+		#[transactional]
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			pool_asset: T::AssetId,
@@ -557,6 +559,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::mint(amounts.len() as u32))]
+		#[transactional]
 		pub fn mint(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -568,6 +571,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::swap(*asset_length))]
+		#[transactional]
 		pub fn swap(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -583,6 +587,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_proportion(min_redeem_amounts.len() as u32))]
+		#[transactional]
 		pub fn redeem_proportion(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -594,6 +599,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_single(*asset_length))]
+		#[transactional]
 		pub fn redeem_single(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -607,6 +613,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_multi(amounts.len() as u32))]
+		#[transactional]
 		pub fn redeem_multi(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -618,6 +625,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::modify_a())]
+		#[transactional]
 		pub fn modify_a(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,

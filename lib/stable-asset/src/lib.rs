@@ -295,7 +295,7 @@ pub mod pallet {
 		dispatch::{Codec, DispatchResult},
 		pallet_prelude::*,
 		traits::EnsureOrigin,
-		transactional, PalletId,
+		PalletId,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
@@ -527,7 +527,6 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(T::WeightInfo::create_pool())]
-		#[transactional]
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			pool_asset: T::AssetId,
@@ -558,7 +557,6 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::mint(amounts.len() as u32))]
-		#[transactional]
 		pub fn mint(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -570,7 +568,6 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::swap(*asset_length))]
-		#[transactional]
 		pub fn swap(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -586,7 +583,6 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_proportion(min_redeem_amounts.len() as u32))]
-		#[transactional]
 		pub fn redeem_proportion(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -598,7 +594,6 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_single(*asset_length))]
-		#[transactional]
 		pub fn redeem_single(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -612,7 +607,6 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_multi(amounts.len() as u32))]
-		#[transactional]
 		pub fn redeem_multi(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -624,7 +618,6 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::modify_a())]
-		#[transactional]
 		pub fn modify_a(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -1387,7 +1380,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 		ensure!(assets.len() == precisions.len(), Error::<T>::ArgumentsMismatch);
 		PoolCount::<T>::try_mutate(|pool_count| -> DispatchResult {
 			let pool_id = *pool_count;
-			let swap_id: T::AccountId = T::PalletId::get().into_sub_account(pool_id);
+			let swap_id: T::AccountId = T::PalletId::get().into_sub_account_truncating(pool_id);
 			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 				ensure!(maybe_pool_info.is_none(), Error::<T>::InconsistentStorage);
 
@@ -1422,7 +1415,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				pool_id,
 				swap_id,
 				a: initial_a,
-				pallet_id: T::PalletId::get().into_account(),
+				pallet_id: T::PalletId::get().into_account_truncating(),
 			});
 			Ok(())
 		})

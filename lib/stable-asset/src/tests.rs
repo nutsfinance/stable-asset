@@ -381,11 +381,12 @@ fn mint_failed_overflow() {
 		let pool_tokens = create_pool();
 		System::set_block_number(2);
 		match pool_tokens {
-			(coin0, coin1, _pool_asset, _swap_id) => {
-				assert_ok!(TestAssets::mint_into(coin0, &1, 10000000000u128));
-				assert_ok!(TestAssets::mint_into(coin1, &1, 20000000000u128));
+			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000000u128, 20000000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0u128),);
+				assert_noop!(
+					StableAsset::mint(Origin::signed(1), 0, amounts, 0u128),
+					Error::<Test>::Math
+				);
 			}
 		}
 	});

@@ -38,7 +38,11 @@ use frame_support::ensure;
 use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 use frame_support::{traits::Get, weights::Weight};
 use scale_info::TypeInfo;
-use sp_runtime::traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
+use sp_core::U256;
+use sp_runtime::{
+	traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero},
+	SaturatedConversion,
+};
 use sp_std::prelude::*;
 
 pub type PoolTokenIndex = u32;
@@ -298,7 +302,10 @@ pub mod pallet {
 		transactional, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero};
+	use sp_runtime::{
+		traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero},
+		FixedPointOperand,
+	};
 	use sp_std::prelude::*;
 
 	#[pallet::config]
@@ -324,7 +331,8 @@ pub mod pallet {
 			+ From<Self::BlockNumber>
 			+ TryFrom<usize>
 			+ Zero
-			+ One;
+			+ One
+			+ FixedPointOperand;
 		#[pallet::constant]
 		type PalletId: Get<PalletId>;
 		#[pallet::constant]
@@ -673,42 +681,44 @@ impl<T: Config> Pallet<T> {
 		balances: &[T::AtLeast64BitUnsigned],
 		a: T::AtLeast64BitUnsigned,
 	) -> Option<T::AtLeast64BitUnsigned> {
-		let zero: T::AtLeast64BitUnsigned = Zero::zero();
-		let one: T::AtLeast64BitUnsigned = One::one();
-		let mut sum: T::AtLeast64BitUnsigned = zero;
-		let mut ann: T::AtLeast64BitUnsigned = a;
-		let balance_size: T::AtLeast64BitUnsigned = T::AtLeast64BitUnsigned::try_from(balances.len()).ok()?;
+		let zero: U256 = U256::from(0u128);
+		let one: U256 = U256::from(1u128);
+		let mut sum: U256 = U256::from(0u128);
+		let mut ann: U256 = U256::from(a.saturated_into::<u128>());
+		let balance_size: U256 = U256::from(balances.len());
+		let a_precision_u256: U256 = U256::from(T::APrecision::get().saturated_into::<u128>());
 		for x in balances.iter() {
-			sum = sum.checked_add(x)?;
-			ann = ann.checked_mul(&balance_size)?;
+			let balance: u128 = (*x).saturated_into::<u128>();
+			sum = sum.checked_add(balance.into())?;
+			ann = ann.checked_mul(balance_size)?;
 		}
 		if sum == zero {
-			return Some(zero);
+			return Some(Zero::zero());
 		}
 
-		let mut prev_d: T::AtLeast64BitUnsigned;
-		let mut d: T::AtLeast64BitUnsigned = sum;
-
+		let mut prev_d: U256;
+		let mut d: U256 = sum;
 		for _i in 0..NUMBER_OF_ITERATIONS_TO_CONVERGE {
-			let mut p_d: T::AtLeast64BitUnsigned = d;
+			let mut p_d: U256 = d;
 			for x in balances.iter() {
-				let div_op = x.checked_mul(&balance_size)?;
-				p_d = p_d.checked_mul(&d)?.checked_div(&div_op)?;
+				let balance: u128 = (*x).saturated_into::<u128>();
+				let div_op = U256::from(balance).checked_mul(balance_size)?;
+				p_d = p_d.checked_mul(d)?.checked_div(div_op)?;
 			}
 			prev_d = d;
-			let t1: T::AtLeast64BitUnsigned = p_d.checked_mul(&balance_size)?;
-			let t2: T::AtLeast64BitUnsigned = balance_size.checked_add(&one)?.checked_mul(&p_d)?;
-			let t3: T::AtLeast64BitUnsigned = ann
-				.checked_sub(&T::APrecision::get())?
-				.checked_mul(&d)?
-				.checked_div(&T::APrecision::get())?
-				.checked_add(&t2)?;
+			let t1: U256 = p_d.checked_mul(balance_size)?;
+			let t2: U256 = balance_size.checked_add(one)?.checked_mul(p_d)?;
+			let t3: U256 = ann
+				.checked_sub(a_precision_u256)?
+				.checked_mul(d)?
+				.checked_div(a_precision_u256)?
+				.checked_add(t2)?;
 			d = ann
-				.checked_mul(&sum)?
-				.checked_div(&T::APrecision::get())?
-				.checked_add(&t1)?
-				.checked_mul(&d)?
-				.checked_div(&t3)?;
+				.checked_mul(sum)?
+				.checked_div(a_precision_u256)?
+				.checked_add(t1)?
+				.checked_mul(d)?
+				.checked_div(t3)?;
 			if d > prev_d {
 				if d - prev_d <= one {
 					break;
@@ -717,7 +727,8 @@ impl<T: Config> Pallet<T> {
 				break;
 			}
 		}
-		Some(d)
+		let result: u128 = u128::try_from(d).ok()?;
+		Some(result.into())
 	}
 
 	pub(crate) fn get_y(
@@ -726,41 +737,41 @@ impl<T: Config> Pallet<T> {
 		target_d: T::AtLeast64BitUnsigned,
 		amplitude: T::AtLeast64BitUnsigned,
 	) -> Option<T::AtLeast64BitUnsigned> {
-		let zero: T::AtLeast64BitUnsigned = Zero::zero();
-		let one: T::AtLeast64BitUnsigned = One::one();
-		let two: T::AtLeast64BitUnsigned = 2u8.into();
-		let mut c: T::AtLeast64BitUnsigned = target_d;
-		let mut sum: T::AtLeast64BitUnsigned = zero;
-		let mut ann: T::AtLeast64BitUnsigned = amplitude;
-		let balance_size: T::AtLeast64BitUnsigned = T::AtLeast64BitUnsigned::try_from(balances.len()).ok()?;
+		let one: U256 = U256::from(1u128);
+		let two: U256 = U256::from(2u128);
+		let mut c: U256 = U256::from(target_d.saturated_into::<u128>());
+		let mut sum: U256 = U256::from(0u128);
+		let mut ann: U256 = U256::from(amplitude.saturated_into::<u128>());
+		let balance_size: U256 = U256::from(balances.len());
+		let target_d_u256: U256 = U256::from(target_d.saturated_into::<u128>());
+		let a_precision_u256: U256 = U256::from(T::APrecision::get().saturated_into::<u128>());
 
 		for (i, balance_ref) in balances.iter().enumerate() {
-			let balance: T::AtLeast64BitUnsigned = *balance_ref;
-			ann = ann.checked_mul(&balance_size)?;
+			let balance: U256 = U256::from((*balance_ref).saturated_into::<u128>());
+			ann = ann.checked_mul(balance_size)?;
 			let token_index_usize = token_index as usize;
 			if i == token_index_usize {
 				continue;
 			}
-			sum = sum.checked_add(&balance)?;
-			let div_op = balance.checked_mul(&balance_size)?;
-			c = c.checked_mul(&target_d)?.checked_div(&div_op)?
+			sum = sum.checked_add(balance)?;
+			let div_op: U256 = balance.checked_mul(balance_size)?;
+			c = c.checked_mul(target_d_u256)?.checked_div(div_op)?
 		}
 
 		c = c
-			.checked_mul(&target_d)?
-			.checked_mul(&T::APrecision::get())?
-			.checked_div(&ann.checked_mul(&balance_size)?)?;
-		let b: T::AtLeast64BitUnsigned =
-			sum.checked_add(&target_d.checked_mul(&T::APrecision::get())?.checked_div(&ann)?)?;
-		let mut prev_y: T::AtLeast64BitUnsigned;
-		let mut y: T::AtLeast64BitUnsigned = target_d;
+			.checked_mul(target_d_u256)?
+			.checked_mul(a_precision_u256)?
+			.checked_div(ann.checked_mul(balance_size)?)?;
+		let b: U256 = sum.checked_add(target_d_u256.checked_mul(a_precision_u256)?.checked_div(ann)?)?;
+		let mut prev_y: U256;
+		let mut y: U256 = target_d_u256;
 
 		for _i in 0..NUMBER_OF_ITERATIONS_TO_CONVERGE {
 			prev_y = y;
 			y = y
-				.checked_mul(&y)?
-				.checked_add(&c)?
-				.checked_div(&y.checked_mul(&two)?.checked_add(&b)?.checked_sub(&target_d)?)?;
+				.checked_mul(y)?
+				.checked_add(c)?
+				.checked_div(y.checked_mul(two)?.checked_add(b)?.checked_sub(target_d_u256)?)?;
 			if y > prev_y {
 				if y - prev_y <= one {
 					break;
@@ -769,7 +780,8 @@ impl<T: Config> Pallet<T> {
 				break;
 			}
 		}
-		Some(y)
+		let result: u128 = u128::try_from(y).ok()?;
+		Some(result.into())
 	}
 
 	pub(crate) fn get_mint_amount(
@@ -1465,7 +1477,6 @@ impl<T: Config> StableAsset for Pallet<T> {
 				}
 				T::Assets::transfer(pool_info.assets[i], who, &pool_info.account_id, *amount, false)?;
 			}
-
 			let zero: T::Balance = Zero::zero();
 			if fee_amount > zero {
 				T::Assets::mint_into(pool_info.pool_asset, &pool_info.fee_recipient, fee_amount)?;

@@ -97,4 +97,17 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 			.saturating_add(RocksDbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
 	}
+	fn mint_xcm(u: u32) -> Weight {
+		(85_694_000 as Weight) // Standard Error: 187_000
+			.saturating_add((46_172_000 as Weight).saturating_mul(u as Weight))
+			.saturating_add(RocksDbWeight::get().reads(6 as Weight))
+			.saturating_add(RocksDbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
+			.saturating_add(RocksDbWeight::get().writes(6 as Weight))
+			.saturating_add(RocksDbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
+	}
+	fn mint_xcm_fail() -> Weight {
+		(33_115_000 as Weight)
+			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
+			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
+	}
 }

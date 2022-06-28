@@ -90,11 +90,10 @@ impl pallet_balances::Config for Test {
 }
 
 pub type Balance = u128;
-type AtLeast64BitUnsigned = u128;
 
 pub type AssetId = i64;
 
-use crate::{ParachainId, StableAssetXcmPoolId};
+use crate::{ParachainId, PoolTokenIndex, StableAssetPoolId};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
@@ -254,11 +253,33 @@ impl crate::traits::XcmInterface for XcmInterface {
 	type Balance = Balance;
 	type AccountId = AccountId;
 
-	fn send_mint_call_to_xcm(
+	fn send_mint_failed(
 		_account_id: Self::AccountId,
-		_remote_pool_id: StableAssetXcmPoolId,
 		_chain_id: ParachainId,
+		_pool_id: StableAssetPoolId,
 		_mint_amount: Self::Balance,
+	) -> DispatchResult {
+		Ok(())
+	}
+
+	fn send_redeem_proportion(
+		_account_id: Self::AccountId,
+		_chain_id: ParachainId,
+		_pool_id: StableAssetPoolId,
+		_amount: Self::Balance,
+		_min_redeem_amounts: Vec<Self::Balance>,
+	) -> DispatchResult {
+		Ok(())
+	}
+
+	fn send_redeem_single(
+		_account_id: Self::AccountId,
+		_chain_id: ParachainId,
+		_pool_id: StableAssetPoolId,
+		_amount: Self::Balance,
+		_i: PoolTokenIndex,
+		_min_redeem_amount: Self::Balance,
+		_asset_length: u32,
 	) -> DispatchResult {
 		Ok(())
 	}
@@ -270,14 +291,8 @@ impl stable_asset::Config for Test {
 	type Balance = Balance;
 	type Assets = TestAssets;
 	type PalletId = StableAssetPalletId;
-
-	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
-	type FeePrecision = ConstU128<10_000_000_000>;
-	type APrecision = ConstU128<100>;
-	type PoolAssetLimit = ConstU32<5>;
-	type SwapExactOverAmount = ConstU128<100>;
-	type ChainId = ConstU32<100>;
 	type XcmInterface = XcmInterface;
+
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;

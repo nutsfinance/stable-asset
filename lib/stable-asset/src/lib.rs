@@ -31,11 +31,11 @@ mod tests;
 
 pub mod weights;
 
-use crate::traits::StableAsset;
+use crate::traits::{StableAsset, XcmInterface};
 use frame_support::codec::{Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::ensure;
 use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
+use frame_support::{ensure, transactional};
 use frame_support::{traits::Get, weights::Weight};
 use scale_info::TypeInfo;
 use sp_core::U512;
@@ -48,6 +48,10 @@ use sp_std::prelude::*;
 pub type PoolTokenIndex = u32;
 
 pub type StableAssetPoolId = u32;
+
+pub type StableAssetXcmPoolId = u32;
+
+pub type ParachainId = u32;
 
 const NUMBER_OF_ITERATIONS_TO_CONVERGE: i32 = 255; // the number of iterations to sum d and y
 
@@ -75,14 +79,19 @@ pub trait WeightInfo {
 	fn create_pool() -> Weight;
 	fn modify_a() -> Weight;
 	fn mint(u: u32) -> Weight;
+	fn mint_xcm(u: u32) -> Weight;
 	fn swap(u: u32) -> Weight;
 	fn redeem_proportion(u: u32) -> Weight;
 	fn redeem_single(u: u32) -> Weight;
 	fn redeem_multi(u: u32) -> Weight;
+	fn mint_xcm_fail() -> Weight;
 }
 
 pub mod traits {
-	use crate::{PoolTokenIndex, RedeemProportionResult, StableAssetPoolId, StableAssetPoolInfo, SwapResult};
+	use crate::{
+		ParachainId, PoolTokenIndex, RedeemProportionResult, StableAssetPoolId, StableAssetPoolInfo,
+		StableAssetXcmPoolId, SwapResult,
+	};
 	use frame_support::dispatch::{DispatchError, DispatchResult};
 	use sp_std::prelude::*;
 
@@ -129,7 +138,7 @@ pub mod traits {
 			pool_id: StableAssetPoolId,
 			amounts: Vec<Self::Balance>,
 			min_mint_amount: Self::Balance,
-		) -> DispatchResult;
+		) -> sp_std::result::Result<Self::Balance, DispatchError>;
 
 		fn swap(
 			who: &Self::AccountId,
@@ -286,19 +295,38 @@ pub mod traits {
 			output_index: PoolTokenIndex,
 			dy_bal: Self::Balance,
 		) -> Option<SwapResult<Self::Balance>>;
+
+		fn mint_xcm(
+			who: &Self::AccountId,
+			pool_id: StableAssetPoolId,
+			amounts: Vec<Self::Balance>,
+			min_mint_amount: Self::Balance,
+			remote_pool_id: StableAssetXcmPoolId,
+		) -> DispatchResult;
+	}
+
+	pub trait XcmInterface {
+		type Balance;
+		type AccountId;
+		fn send_mint_call_to_xcm(
+			account_id: Self::AccountId,
+			remote_pool_id: StableAssetXcmPoolId,
+			chain_id: ParachainId,
+			mint_amount: Self::Balance,
+		) -> DispatchResult;
 	}
 }
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
-	use crate::traits::{StableAsset, ValidateAssetId};
-	use crate::WeightInfo;
+	use super::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo, StableAssetXcmPoolId};
+	use crate::traits::{StableAsset, ValidateAssetId, XcmInterface};
+	use crate::{ParachainId, WeightInfo};
 	use frame_support::traits::tokens::fungibles;
 	use frame_support::{
 		dispatch::{Codec, DispatchResult},
 		pallet_prelude::*,
-		traits::EnsureOrigin,
+		traits::{fungibles::Transfer, EnsureOrigin},
 		transactional, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
@@ -343,8 +371,11 @@ pub mod pallet {
 		type APrecision: Get<Self::AtLeast64BitUnsigned>;
 		#[pallet::constant]
 		type PoolAssetLimit: Get<u32>;
+		#[pallet::constant]
+		type ChainId: Get<ParachainId>;
 		type WeightInfo: WeightInfo;
 		type EnsurePoolAssetId: ValidateAssetId<Self::AssetId>;
+		type XcmInterface: XcmInterface<Balance = Self::Balance, AccountId = Self::AccountId>;
 
 		/// The origin which may create pool or modify pool.
 		type ListingOrigin: EnsureOrigin<Self::Origin>;
@@ -574,7 +605,8 @@ pub mod pallet {
 			min_mint_amount: T::Balance,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			<Self as StableAsset>::mint(&who, pool_id, amounts, min_mint_amount)
+			<Self as StableAsset>::mint(&who, pool_id, amounts, min_mint_amount)?;
+			Ok(())
 		}
 
 		#[pallet::weight(T::WeightInfo::swap(*asset_length))]
@@ -641,6 +673,69 @@ pub mod pallet {
 		) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
 			<Self as StableAsset>::modify_a(pool_id, a, future_a_block)
+		}
+
+		#[pallet::weight(T::WeightInfo::mint(amounts.len() as u32))]
+		#[transactional]
+		pub fn mint_xcm(
+			origin: OriginFor<T>,
+			pool_id: StableAssetPoolId,
+			amounts: Vec<T::Balance>,
+			min_mint_amount: T::Balance,
+			remote_pool_id: StableAssetXcmPoolId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			<Self as StableAsset>::mint_xcm(&who, pool_id, amounts, min_mint_amount, remote_pool_id)
+		}
+
+		#[pallet::weight(T::WeightInfo::mint_xcm_fail())]
+		#[transactional]
+		pub fn mint_xcm_fail(
+			origin: OriginFor<T>,
+			pool_id: StableAssetPoolId,
+			account_id: T::AccountId,
+			mint_amount: T::Balance,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin)?;
+			let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
+			T::Assets::transfer(
+				pool_info.pool_asset,
+				&pool_info.account_id,
+				&account_id,
+				mint_amount,
+				false,
+			)?;
+			Ok(())
+		}
+
+		#[pallet::weight(T::WeightInfo::redeem_proportion(min_redeem_amounts.len() as u32))]
+		pub fn redeem_proportion_xcm(
+			origin: OriginFor<T>,
+			account_id: T::AccountId,
+			pool_id: StableAssetPoolId,
+			amount: T::Balance,
+			min_redeem_amounts: Vec<T::Balance>,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin)?;
+			let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
+			T::Assets::transfer(pool_info.pool_asset, &pool_info.account_id, &account_id, amount, false)?;
+			<Self as StableAsset>::redeem_proportion(&account_id, pool_id, amount, min_redeem_amounts)
+		}
+
+		#[pallet::weight(T::WeightInfo::redeem_single(*asset_length))]
+		pub fn redeem_single_xcm(
+			origin: OriginFor<T>,
+			account_id: T::AccountId,
+			pool_id: StableAssetPoolId,
+			amount: T::Balance,
+			i: PoolTokenIndex,
+			min_redeem_amount: T::Balance,
+			asset_length: u32,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin)?;
+			let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
+			T::Assets::transfer(pool_info.pool_asset, &pool_info.account_id, &account_id, amount, false)?;
+			<Self as StableAsset>::redeem_single(&account_id, pool_id, amount, i, min_redeem_amount, asset_length)
 		}
 	}
 }
@@ -1453,51 +1548,54 @@ impl<T: Config> StableAsset for Pallet<T> {
 		pool_id: StableAssetPoolId,
 		amounts: Vec<Self::Balance>,
 		min_mint_amount: Self::Balance,
-	) -> DispatchResult {
-		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			Self::collect_yield(pool_id, pool_info)?;
-			let MintResult {
-				mint_amount,
-				fee_amount,
-				balances,
-				total_supply,
-			} = Self::get_mint_amount(pool_info, &amounts)?;
-			let a: T::AtLeast64BitUnsigned = Self::get_a(
-				pool_info.a,
-				pool_info.a_block,
-				pool_info.future_a,
-				pool_info.future_a_block,
-			)
-			.ok_or(Error::<T>::Math)?;
-			ensure!(mint_amount >= min_mint_amount, Error::<T>::MintUnderMin);
-			for (i, amount) in amounts.iter().enumerate() {
-				if *amount == Zero::zero() {
-					continue;
+	) -> sp_std::result::Result<Self::Balance, DispatchError> {
+		Pools::<T>::try_mutate_exists(
+			pool_id,
+			|maybe_pool_info| -> sp_std::result::Result<Self::Balance, DispatchError> {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				Self::collect_yield(pool_id, pool_info)?;
+				let MintResult {
+					mint_amount,
+					fee_amount,
+					balances,
+					total_supply,
+				} = Self::get_mint_amount(pool_info, &amounts)?;
+				let a: T::AtLeast64BitUnsigned = Self::get_a(
+					pool_info.a,
+					pool_info.a_block,
+					pool_info.future_a,
+					pool_info.future_a_block,
+				)
+				.ok_or(Error::<T>::Math)?;
+				ensure!(mint_amount >= min_mint_amount, Error::<T>::MintUnderMin);
+				for (i, amount) in amounts.iter().enumerate() {
+					if *amount == Zero::zero() {
+						continue;
+					}
+					T::Assets::transfer(pool_info.assets[i], who, &pool_info.account_id, *amount, false)?;
 				}
-				T::Assets::transfer(pool_info.assets[i], who, &pool_info.account_id, *amount, false)?;
-			}
-			let zero: T::Balance = Zero::zero();
-			if fee_amount > zero {
-				T::Assets::mint_into(pool_info.pool_asset, &pool_info.fee_recipient, fee_amount)?;
-			}
-			T::Assets::mint_into(pool_info.pool_asset, who, mint_amount)?;
-			pool_info.total_supply = total_supply;
-			pool_info.balances = balances;
-			Self::collect_fee(pool_id, pool_info)?;
-			Self::deposit_event(Event::Minted {
-				minter: who.clone(),
-				pool_id,
-				a,
-				input_amounts: amounts,
-				min_output_amount: min_mint_amount,
-				balances: pool_info.balances.clone(),
-				total_supply: pool_info.total_supply,
-				fee_amount,
-				output_amount: mint_amount,
-			});
-			Ok(())
-		})
+				let zero: T::Balance = Zero::zero();
+				if fee_amount > zero {
+					T::Assets::mint_into(pool_info.pool_asset, &pool_info.fee_recipient, fee_amount)?;
+				}
+				T::Assets::mint_into(pool_info.pool_asset, who, mint_amount)?;
+				pool_info.total_supply = total_supply;
+				pool_info.balances = balances;
+				Self::collect_fee(pool_id, pool_info)?;
+				Self::deposit_event(Event::Minted {
+					minter: who.clone(),
+					pool_id,
+					a,
+					input_amounts: amounts,
+					min_output_amount: min_mint_amount,
+					balances: pool_info.balances.clone(),
+					total_supply: pool_info.total_supply,
+					fee_amount,
+					output_amount: mint_amount,
+				});
+				Ok(mint_amount)
+			},
+		)
 	}
 
 	/// Swap tokens
@@ -1578,7 +1676,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	/// * `pool_id` - the ID of the pool
 	/// * `amount` - the amount of token to be redeemed
 	/// * `min_redeem_amounts` - the minimum amounts of redeemed token received
-
+	#[transactional]
 	fn redeem_proportion(
 		who: &Self::AccountId,
 		pool_id: StableAssetPoolId,
@@ -1644,7 +1742,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	/// * `i` - the array index of the input token in StableAssetPoolInfo.assets
 	/// * `min_redeem_amount` - the minimum amount of redeemed token received
 	/// * `asset_length` - the length of array in StableAssetPoolInfo.assets
-
+	#[transactional]
 	fn redeem_single(
 		who: &Self::AccountId,
 		pool_id: StableAssetPoolId,
@@ -1673,6 +1771,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 			}
 			T::Assets::transfer(pool_info.assets[i_usize], &pool_info.account_id, who, dy, false)?;
 			T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
+
 			let mut amounts: Vec<T::Balance> = Vec::new();
 			for idx in 0..pool_size {
 				if idx == i_usize {
@@ -1911,5 +2010,19 @@ impl<T: Config> StableAsset for Pallet<T> {
 			Some(pool_info) => Self::get_swap_amount_exact(&pool_info, input_index, output_index, dy_bal),
 			None => None,
 		}
+	}
+
+	fn mint_xcm(
+		who: &Self::AccountId,
+		pool_id: StableAssetPoolId,
+		amounts: Vec<Self::Balance>,
+		min_mint_amount: Self::Balance,
+		remote_pool_id: StableAssetXcmPoolId,
+	) -> DispatchResult {
+		let mint_result = <Self as StableAsset>::mint(who, pool_id, amounts, min_mint_amount)?;
+		let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
+		T::Assets::transfer(pool_info.pool_asset, who, &pool_info.account_id, mint_result, false)?;
+		T::XcmInterface::send_mint_call_to_xcm(who.clone(), remote_pool_id, T::ChainId::get(), mint_result)?;
+		Ok(())
 	}
 }

@@ -16,10 +16,11 @@
 // limitations under the License.
 
 use crate::{mock::*, Error, StableAssetPoolInfo};
+use frame_support::assert_err;
 use frame_support::assert_noop;
 use frame_support::assert_ok;
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::fungibles::{Inspect, Mutate};
+use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 
 pub const BALANCE_OFF: u128 = 1;
 
@@ -1053,7 +1054,7 @@ fn swap_exact_success() {
 			a_block: 0,
 			future_a: a,
 			future_a_block: 100,
-			balances: balances,
+			balances,
 			fee_recipient: 2,
 			account_id: 3,
 			yield_recipient: 1,
@@ -1063,5 +1064,161 @@ fn swap_exact_success() {
 		let result = StableAsset::get_swap_amount_exact(&pool_info, 0, 1, amount).unwrap();
 		let result_two = StableAsset::get_swap_amount(&pool_info, 0, 1, result.dx).unwrap();
 		assert_eq!(result_two.dy >= amount, true);
+	});
+}
+
+#[test]
+fn mint_xcm_successful() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(_coin0, _coin1, pool_asset, swap_id) => {
+				let amounts = vec![10000000u128, 20000000u128];
+				assert_ok!(StableAsset::mint_xcm(Origin::signed(1), 0, amounts, 0, 1));
+				assert_eq!(TestAssets::balance(pool_asset, &swap_id) > 0, true);
+			}
+		}
+	});
+}
+
+#[test]
+fn mint_xcm_fail() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(_coin0, _coin1, pool_asset, swap_id) => {
+				assert_ok!(TestAssets::mint_into(pool_asset, &swap_id, 10000u128));
+				assert_ok!(StableAsset::mint_xcm_fail(Origin::signed(1), 0, 3, 10000u128));
+				assert_eq!(TestAssets::balance(pool_asset, &3), 10000u128 - BALANCE_OFF);
+			}
+		}
+	});
+}
+
+#[test]
+fn redeem_proportion_xcm_successful() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(coin0, coin1, pool_asset, swap_id) => {
+				let amounts = vec![10000000u128, 20000000u128];
+				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(TestAssets::transfer(
+					pool_asset,
+					&1,
+					&swap_id,
+					100000000000000000,
+					false
+				));
+				assert_ok!(StableAsset::redeem_proportion_xcm(
+					Origin::signed(1),
+					2,
+					0,
+					100000000000000000u128,
+					vec![0u128, 0u128]
+				));
+				assert_eq!(TestAssets::balance(coin0, &2) > 0, true);
+				assert_eq!(TestAssets::balance(coin1, &2) > 0, true);
+			}
+		}
+	});
+}
+
+#[test]
+fn redeem_proportion_xcm_failed() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(coin0, coin1, pool_asset, swap_id) => {
+				let amounts = vec![10000000u128, 20000000u128];
+				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(TestAssets::transfer(
+					pool_asset,
+					&1,
+					&swap_id,
+					100000000000000000,
+					false
+				));
+				assert_err!(
+					StableAsset::redeem_proportion_xcm(
+						Origin::signed(1),
+						2,
+						0,
+						100000000000000000u128,
+						vec![100000000000000000u128, 100000000000000000u128]
+					),
+					Error::<Test>::RedeemUnderMin
+				);
+				assert_eq!(TestAssets::balance(pool_asset, &2) > 0, true);
+				assert_eq!(TestAssets::balance(coin0, &2), 0);
+				assert_eq!(TestAssets::balance(coin1, &2), 0);
+			}
+		}
+	});
+}
+
+#[test]
+fn redeem_single_xcm_successful() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(coin0, coin1, pool_asset, swap_id) => {
+				let amounts = vec![10000000u128, 20000000u128];
+				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(TestAssets::transfer(
+					pool_asset,
+					&1,
+					&swap_id,
+					100000000000000000,
+					false
+				));
+				assert_ok!(StableAsset::redeem_single_xcm(
+					Origin::signed(1),
+					2,
+					0,
+					100000000000000000u128,
+					0u32,
+					0u128,
+					2
+				));
+				assert_eq!(TestAssets::balance(coin0, &2) > 0, true);
+				assert_eq!(TestAssets::balance(coin1, &2), 0);
+			}
+		}
+	});
+}
+
+#[test]
+fn redeem_single_xcm_failed() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		match pool_tokens {
+			(coin0, coin1, pool_asset, swap_id) => {
+				let amounts = vec![10000000u128, 20000000u128];
+				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(TestAssets::transfer(
+					pool_asset,
+					&1,
+					&swap_id,
+					100000000000000000,
+					false
+				));
+				assert_err!(
+					StableAsset::redeem_single_xcm(
+						Origin::signed(1),
+						2,
+						0,
+						100000000000000000u128,
+						0u32,
+						100000000000000000u128,
+						2
+					),
+					Error::<Test>::RedeemUnderMin
+				);
+				assert_eq!(TestAssets::balance(pool_asset, &2) > 0, true);
+				assert_eq!(TestAssets::balance(coin0, &2), 0);
+				assert_eq!(TestAssets::balance(coin1, &2), 0);
+			}
+		}
 	});
 }

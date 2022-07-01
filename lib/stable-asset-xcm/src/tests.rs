@@ -48,7 +48,6 @@ fn create_pool_successful() {
 				pool_asset: 1,
 				balances: BTreeMap::new(),
 				limits: BTreeMap::new(),
-				remote_stable_assets: BTreeMap::new(),
 			})
 		);
 	});
@@ -59,24 +58,25 @@ fn update_limit_successful() {
 	new_test_ext().execute_with(|| {
 		create_pool();
 		System::set_block_number(2);
-		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 100));
+		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100));
 		assert_eq!(
 			StableAsset::pools(0),
 			Some(StableAssetXcmPoolInfo {
 				pool_asset: 0,
 				balances: BTreeMap::new(),
-				limits: BTreeMap::from([(1u32, 100u128)]),
-				remote_stable_assets: BTreeMap::new(),
+				limits: BTreeMap::from([((1u32, 2u32), 100u128)]),
 			})
 		);
 		if let Event::StableAsset(crate::pallet::Event::LimitUpdated {
-			pool_id,
+			local_pool_id,
 			chain_id,
+			remote_pool_id,
 			limit,
 		}) = last_event()
 		{
-			assert_eq!(pool_id, 0);
+			assert_eq!(local_pool_id, 0);
 			assert_eq!(chain_id, 1);
+			assert_eq!(remote_pool_id, 2);
 			assert_eq!(limit, 100);
 		} else {
 			panic!("Unexpected event");
@@ -89,7 +89,7 @@ fn update_limit_pool_not_found() {
 	new_test_ext().execute_with(|| {
 		create_pool();
 		assert_noop!(
-			StableAsset::update_limit(Origin::signed(1), 1, 1, 100),
+			StableAsset::update_limit(Origin::signed(1), 1, 1, 2, 100),
 			Error::<Test>::PoolNotFound
 		);
 	});
@@ -99,51 +99,10 @@ fn update_limit_pool_not_found() {
 fn update_limit_failed_lower() {
 	new_test_ext().execute_with(|| {
 		create_pool();
-		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 100));
+		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100));
 		assert_noop!(
-			StableAsset::update_limit(Origin::signed(1), 0, 1, 50),
+			StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 50),
 			Error::<Test>::NewLimitInvalid
-		);
-	});
-}
-
-#[test]
-fn update_remote_stable_asset_successful() {
-	new_test_ext().execute_with(|| {
-		create_pool();
-		System::set_block_number(2);
-		assert_ok!(StableAsset::update_remote_stable_asset(Origin::signed(1), 0, 1, 2));
-		assert_eq!(
-			StableAsset::pools(0),
-			Some(StableAssetXcmPoolInfo {
-				pool_asset: 0,
-				balances: BTreeMap::new(),
-				limits: BTreeMap::new(),
-				remote_stable_assets: BTreeMap::from([(1u32, 2u32)]),
-			})
-		);
-		if let Event::StableAsset(crate::pallet::Event::RemotePoolUpdated {
-			pool_id,
-			chain_id,
-			remote_pool_id,
-		}) = last_event()
-		{
-			assert_eq!(pool_id, 0);
-			assert_eq!(chain_id, 1);
-			assert_eq!(remote_pool_id, 2);
-		} else {
-			panic!("Unexpected event");
-		}
-	});
-}
-
-#[test]
-fn update_remote_stable_asset_pool_not_found() {
-	new_test_ext().execute_with(|| {
-		create_pool();
-		assert_noop!(
-			StableAsset::update_remote_stable_asset(Origin::signed(1), 1, 1, 2),
-			Error::<Test>::PoolNotFound
 		);
 	});
 }
@@ -153,28 +112,29 @@ fn mint_successful() {
 	new_test_ext().execute_with(|| {
 		let asset_id = create_pool();
 		System::set_block_number(2);
-		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 10000));
-		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 200));
+		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 10000));
+		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 200));
 		assert_eq!(
 			StableAsset::pools(0),
 			Some(StableAssetXcmPoolInfo {
 				pool_asset: 0,
-				balances: BTreeMap::from([(1u32, 200u128)]),
-				limits: BTreeMap::from([(1u32, 10000u128)]),
-				remote_stable_assets: BTreeMap::new(),
+				balances: BTreeMap::from([((1u32, 2u32), 200u128)]),
+				limits: BTreeMap::from([((1u32, 2u32), 10000u128)]),
 			})
 		);
 		assert_eq!(TestAssets::balance(asset_id, &2), 200 - BALANCE_OFF);
 		if let Event::StableAsset(crate::pallet::Event::Minted {
 			minter,
-			pool_id,
+			local_pool_id,
 			chain_id,
+			remote_pool_id,
 			mint_amount,
 		}) = last_event()
 		{
 			assert_eq!(minter, 2);
-			assert_eq!(pool_id, 0);
+			assert_eq!(local_pool_id, 0);
 			assert_eq!(chain_id, 1);
+			assert_eq!(remote_pool_id, 2);
 			assert_eq!(mint_amount, 200);
 		} else {
 			panic!("Unexpected event");
@@ -187,7 +147,7 @@ fn mint_pool_not_found() {
 	new_test_ext().execute_with(|| {
 		create_pool();
 		assert_noop!(
-			StableAsset::mint(Origin::signed(2), 2, 1, 1, 200),
+			StableAsset::mint(Origin::signed(2), 2, 1, 1, 2, 200),
 			Error::<Test>::PoolNotFound
 		);
 	});
@@ -197,10 +157,9 @@ fn mint_pool_not_found() {
 fn mint_over_limit() {
 	new_test_ext().execute_with(|| {
 		let _asset_id = create_pool();
-		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 100));
-		assert_ok!(StableAsset::update_remote_stable_asset(Origin::signed(1), 0, 1, 100));
+		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100));
 		assert_noop!(
-			StableAsset::mint(Origin::signed(2), 2, 0, 1, 200),
+			StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 200),
 			Error::<Test>::MintOverLimit
 		);
 	});
@@ -211,28 +170,30 @@ fn redeem_proportion_successful() {
 	new_test_ext().execute_with(|| {
 		let asset_id = create_pool();
 		System::set_block_number(2);
-		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 100000));
-		assert_ok!(StableAsset::update_remote_stable_asset(Origin::signed(1), 0, 1, 100));
-		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 20000));
+		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100000));
+		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 20000));
 		assert_ok!(StableAsset::redeem_proportion(
 			Origin::signed(2),
 			0,
 			1,
+			2,
 			10000,
 			vec![0u128, 0u128]
 		));
 		assert_eq!(TestAssets::balance(asset_id, &2), 10000 - BALANCE_OFF);
 		if let Event::StableAsset(crate::pallet::Event::RedeemedProportion {
 			redeemer,
-			pool_id,
+			local_pool_id,
 			chain_id,
+			remote_pool_id,
 			input_amount,
 			min_redeem_amounts,
 		}) = last_event()
 		{
 			assert_eq!(redeemer, 2);
-			assert_eq!(pool_id, 0);
+			assert_eq!(local_pool_id, 0);
 			assert_eq!(chain_id, 1);
+			assert_eq!(remote_pool_id, 2);
 			assert_eq!(input_amount, 10000);
 			assert_eq!(min_redeem_amounts, vec![0u128, 0u128]);
 		} else {
@@ -246,23 +207,33 @@ fn redeem_single_successful() {
 	new_test_ext().execute_with(|| {
 		let asset_id = create_pool();
 		System::set_block_number(2);
-		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 100000));
-		assert_ok!(StableAsset::update_remote_stable_asset(Origin::signed(1), 0, 1, 100));
-		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 20000));
-		assert_ok!(StableAsset::redeem_single(Origin::signed(2), 0, 1, 10000, 1, 0u128, 2));
+		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100000));
+		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 20000));
+		assert_ok!(StableAsset::redeem_single(
+			Origin::signed(2),
+			0,
+			1,
+			2,
+			10000,
+			1,
+			0u128,
+			2
+		));
 		assert_eq!(TestAssets::balance(asset_id, &2), 10000 - BALANCE_OFF);
 		if let Event::StableAsset(crate::pallet::Event::RedeemedSingle {
 			redeemer,
-			pool_id,
+			local_pool_id,
 			chain_id,
+			remote_pool_id,
 			input_amount,
 			i,
 			min_redeem_amount,
 		}) = last_event()
 		{
 			assert_eq!(redeemer, 2);
-			assert_eq!(pool_id, 0);
+			assert_eq!(local_pool_id, 0);
 			assert_eq!(chain_id, 1);
+			assert_eq!(remote_pool_id, 2);
 			assert_eq!(input_amount, 10000);
 			assert_eq!(i, 1);
 			assert_eq!(min_redeem_amount, 0u128);

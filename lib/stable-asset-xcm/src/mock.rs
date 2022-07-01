@@ -295,6 +295,7 @@ impl stable_asset::Config for Test {
 
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
+	type XcmOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;
 }
 

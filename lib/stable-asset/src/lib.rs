@@ -298,7 +298,7 @@ pub mod traits {
 
 		fn mint_xcm(
 			who: &Self::AccountId,
-			pool_id: StableAssetPoolId,
+			local_pool_id: StableAssetPoolId,
 			amounts: Vec<Self::Balance>,
 			min_mint_amount: Self::Balance,
 			remote_pool_id: StableAssetXcmPoolId,
@@ -312,6 +312,7 @@ pub mod traits {
 			account_id: Self::AccountId,
 			remote_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			local_pool_id: StableAssetPoolId,
 			mint_amount: Self::Balance,
 		) -> DispatchResult;
 	}
@@ -379,6 +380,8 @@ pub mod pallet {
 
 		/// The origin which may create pool or modify pool.
 		type ListingOrigin: EnsureOrigin<Self::Origin>;
+
+		type XcmOrigin: EnsureOrigin<Self::Origin>;
 	}
 
 	#[pallet::pallet]
@@ -696,7 +699,7 @@ pub mod pallet {
 			account_id: T::AccountId,
 			mint_amount: T::Balance,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin)?;
+			T::XcmOrigin::ensure_origin(origin)?;
 			let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			T::Assets::transfer(
 				pool_info.pool_asset,
@@ -716,7 +719,7 @@ pub mod pallet {
 			amount: T::Balance,
 			min_redeem_amounts: Vec<T::Balance>,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin)?;
+			T::XcmOrigin::ensure_origin(origin)?;
 			let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			T::Assets::transfer(pool_info.pool_asset, &pool_info.account_id, &account_id, amount, false)?;
 			<Self as StableAsset>::redeem_proportion(&account_id, pool_id, amount, min_redeem_amounts)
@@ -732,7 +735,7 @@ pub mod pallet {
 			min_redeem_amount: T::Balance,
 			asset_length: u32,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin)?;
+			T::XcmOrigin::ensure_origin(origin)?;
 			let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			T::Assets::transfer(pool_info.pool_asset, &pool_info.account_id, &account_id, amount, false)?;
 			<Self as StableAsset>::redeem_single(&account_id, pool_id, amount, i, min_redeem_amount, asset_length)
@@ -2014,15 +2017,21 @@ impl<T: Config> StableAsset for Pallet<T> {
 
 	fn mint_xcm(
 		who: &Self::AccountId,
-		pool_id: StableAssetPoolId,
+		local_pool_id: StableAssetPoolId,
 		amounts: Vec<Self::Balance>,
 		min_mint_amount: Self::Balance,
 		remote_pool_id: StableAssetXcmPoolId,
 	) -> DispatchResult {
-		let mint_result = <Self as StableAsset>::mint(who, pool_id, amounts, min_mint_amount)?;
-		let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
+		let mint_result = <Self as StableAsset>::mint(who, local_pool_id, amounts, min_mint_amount)?;
+		let pool_info = Self::pool(local_pool_id).ok_or(Error::<T>::PoolNotFound)?;
 		T::Assets::transfer(pool_info.pool_asset, who, &pool_info.account_id, mint_result, false)?;
-		T::XcmInterface::send_mint_call_to_xcm(who.clone(), remote_pool_id, T::ChainId::get(), mint_result)?;
+		T::XcmInterface::send_mint_call_to_xcm(
+			who.clone(),
+			remote_pool_id,
+			T::ChainId::get(),
+			local_pool_id,
+			mint_result,
+		)?;
 		Ok(())
 	}
 }

@@ -54,15 +54,13 @@ pub type StableAssetPoolId = u32;
 #[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug, TypeInfo)]
 pub struct StableAssetXcmPoolInfo<AssetId, Balance> {
 	pub pool_asset: AssetId,
-	pub balances: BTreeMap<ParachainId, Balance>,
-	pub limits: BTreeMap<ParachainId, Balance>,
-	pub remote_stable_assets: BTreeMap<ParachainId, StableAssetPoolId>,
+	pub balances: BTreeMap<(ParachainId, StableAssetPoolId), Balance>,
+	pub limits: BTreeMap<(ParachainId, StableAssetPoolId), Balance>,
 }
 
 pub trait WeightInfo {
 	fn create_pool() -> Weight;
 	fn update_limit() -> Weight;
-	fn update_remote_stable_asset() -> Weight;
 	fn mint() -> Weight;
 	fn redeem_proportion() -> Weight;
 	fn redeem_single() -> Weight;
@@ -88,33 +86,35 @@ pub mod traits {
 
 		fn create_pool(pool_asset: Self::AssetId) -> DispatchResult;
 
-		fn update_limit(pool_id: StableAssetXcmPoolId, chain_id: ParachainId, limit: Self::Balance) -> DispatchResult;
-
-		fn update_remote_stable_asset(
-			pool_id: StableAssetXcmPoolId,
+		fn update_limit(
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
 			remote_pool_id: StableAssetPoolId,
+			limit: Self::Balance,
 		) -> DispatchResult;
 
 		fn mint(
 			who: Self::AccountId,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			amount: Self::Balance,
 		) -> DispatchResult;
 
 		fn redeem_proportion(
 			who: &Self::AccountId,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			amount: Self::Balance,
 			min_redeem_amounts: Vec<Self::Balance>,
 		) -> DispatchResult;
 
 		fn redeem_single(
 			who: &Self::AccountId,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			amount: Self::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: Self::Balance,
@@ -184,6 +184,8 @@ pub mod pallet {
 
 		/// The origin which may create pool or modify pool.
 		type ListingOrigin: EnsureOrigin<Self::Origin>;
+		/// The origin which may do xcm interactions.
+		type XcmOrigin: EnsureOrigin<Self::Origin>;
 	}
 
 	#[pallet::pallet]
@@ -207,32 +209,31 @@ pub mod pallet {
 			pool_id: StableAssetXcmPoolId,
 		},
 		LimitUpdated {
-			pool_id: StableAssetXcmPoolId,
-			chain_id: ParachainId,
-			limit: T::Balance,
-		},
-		RemotePoolUpdated {
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
 			remote_pool_id: StableAssetPoolId,
+			limit: T::Balance,
 		},
 		Minted {
 			minter: T::AccountId,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			mint_amount: T::Balance,
 		},
 		RedeemedProportion {
 			redeemer: T::AccountId,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			input_amount: T::Balance,
 			min_redeem_amounts: Vec<T::Balance>,
 		},
 		RedeemedSingle {
 			redeemer: T::AccountId,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			input_amount: T::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: T::Balance,
@@ -267,24 +268,13 @@ pub mod pallet {
 		#[transactional]
 		pub fn update_limit(
 			origin: OriginFor<T>,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			limit: T::Balance,
 		) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
-			<Self as StableAssetXcm>::update_limit(pool_id, chain_id, limit)
-		}
-
-		#[pallet::weight(T::WeightInfo::update_remote_stable_asset())]
-		#[transactional]
-		pub fn update_remote_stable_asset(
-			origin: OriginFor<T>,
-			pool_id: StableAssetXcmPoolId,
-			chain_id: ParachainId,
-			remote_pool_id: StableAssetPoolId,
-		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin.clone())?;
-			<Self as StableAssetXcm>::update_remote_stable_asset(pool_id, chain_id, remote_pool_id)
+			<Self as StableAssetXcm>::update_limit(local_pool_id, chain_id, remote_pool_id, limit)
 		}
 
 		#[pallet::weight(T::WeightInfo::mint())]
@@ -292,40 +282,59 @@ pub mod pallet {
 		pub fn mint(
 			origin: OriginFor<T>,
 			account_id: T::AccountId,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			amount: T::Balance,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin)?;
-			<Self as StableAssetXcm>::mint(account_id, pool_id, chain_id, amount)
+			T::XcmOrigin::ensure_origin(origin)?;
+			<Self as StableAssetXcm>::mint(account_id, local_pool_id, chain_id, remote_pool_id, amount)
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_proportion())]
 		#[transactional]
 		pub fn redeem_proportion(
 			origin: OriginFor<T>,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			amount: T::Balance,
 			min_redeem_amounts: Vec<T::Balance>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			<Self as StableAssetXcm>::redeem_proportion(&who, pool_id, chain_id, amount, min_redeem_amounts)
+			<Self as StableAssetXcm>::redeem_proportion(
+				&who,
+				local_pool_id,
+				chain_id,
+				remote_pool_id,
+				amount,
+				min_redeem_amounts,
+			)
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_single())]
 		#[transactional]
 		pub fn redeem_single(
 			origin: OriginFor<T>,
-			pool_id: StableAssetXcmPoolId,
+			local_pool_id: StableAssetXcmPoolId,
 			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
 			amount: T::Balance,
 			i: PoolTokenIndex,
 			min_redeem_amount: T::Balance,
 			asset_length: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			<Self as StableAssetXcm>::redeem_single(&who, pool_id, chain_id, amount, i, min_redeem_amount, asset_length)
+			<Self as StableAssetXcm>::redeem_single(
+				&who,
+				local_pool_id,
+				chain_id,
+				remote_pool_id,
+				amount,
+				i,
+				min_redeem_amount,
+				asset_length,
+			)
 		}
 	}
 }
@@ -358,7 +367,6 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 					pool_asset,
 					balances: BTreeMap::new(),
 					limits: BTreeMap::new(),
-					remote_stable_assets: BTreeMap::new(),
 				});
 				Ok(())
 			})?;
@@ -378,44 +386,26 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 	/// * `chain_id` - the ID of remote chain
 	/// * `limit` - the new balance limit
 
-	fn update_limit(pool_id: StableAssetXcmPoolId, chain_id: ParachainId, limit: Self::Balance) -> DispatchResult {
-		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+	fn update_limit(
+		local_pool_id: StableAssetXcmPoolId,
+		chain_id: ParachainId,
+		remote_pool_id: StableAssetPoolId,
+		limit: Self::Balance,
+	) -> DispatchResult {
+		Pools::<T>::try_mutate_exists(local_pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			let old_limit = pool_info.limits.get(&chain_id);
+			let key = (chain_id, remote_pool_id);
+			let old_limit = pool_info.limits.get(&key);
 			match old_limit {
 				Some(x) => ensure!(limit >= *x, Error::<T>::NewLimitInvalid),
 				None => (),
 			}
-			pool_info.limits.insert(chain_id, limit);
+			pool_info.limits.insert(key, limit);
 			Self::deposit_event(Event::LimitUpdated {
-				pool_id,
+				local_pool_id,
+				remote_pool_id,
 				chain_id,
 				limit,
-			});
-			Ok(())
-		})
-	}
-
-	/// Update Remote Stable Asset ID
-	///
-	/// # Arguments
-	///
-	/// * `pool_id` - the ID of the pool
-	/// * `chain_id` - the ID of remote chain
-	/// * `remote_pool_id` - the ID of remote stable asset
-
-	fn update_remote_stable_asset(
-		pool_id: StableAssetXcmPoolId,
-		chain_id: ParachainId,
-		remote_pool_id: StableAssetPoolId,
-	) -> DispatchResult {
-		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			pool_info.remote_stable_assets.insert(chain_id, remote_pool_id);
-			Self::deposit_event(Event::RemotePoolUpdated {
-				pool_id,
-				chain_id,
-				remote_pool_id,
 			});
 			Ok(())
 		})
@@ -431,26 +421,25 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 
 	fn mint(
 		who: Self::AccountId,
-		pool_id: StableAssetXcmPoolId,
+		local_pool_id: StableAssetXcmPoolId,
 		chain_id: ParachainId,
+		remote_pool_id: StableAssetPoolId,
 		amount: Self::Balance,
 	) -> DispatchResult {
-		let result = Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+		let result = Pools::<T>::try_mutate_exists(local_pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			let limit = pool_info
-				.limits
-				.get(&chain_id)
-				.copied()
-				.ok_or(Error::<T>::MintOverLimit)?;
-			let balance = pool_info.balances.get(&chain_id).copied().unwrap_or_else(Zero::zero);
+			let key = (chain_id, remote_pool_id);
+			let limit = pool_info.limits.get(&key).copied().ok_or(Error::<T>::MintOverLimit)?;
+			let balance = pool_info.balances.get(&key).copied().unwrap_or_else(Zero::zero);
 			ensure!(balance + amount <= limit, Error::<T>::MintOverLimit);
 			let new_balance = balance + amount;
-			pool_info.balances.insert(chain_id, new_balance);
+			pool_info.balances.insert(key, new_balance);
 			T::Assets::mint_into(pool_info.pool_asset, &who, amount)?;
 			Self::deposit_event(Event::Minted {
 				minter: who.clone(),
-				pool_id,
+				local_pool_id,
 				chain_id,
+				remote_pool_id,
 				mint_amount: amount,
 			});
 			Ok(())
@@ -459,12 +448,6 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 		match result {
 			Ok(_) => (),
 			Err(_) => {
-				let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
-				let remote_pool_id = pool_info
-					.remote_stable_assets
-					.get(&chain_id)
-					.copied()
-					.ok_or(Error::<T>::RemotePoolNotFound)?;
 				T::XcmInterface::send_mint_failed(who, chain_id, remote_pool_id, amount)?;
 			}
 		}
@@ -482,21 +465,18 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 
 	fn redeem_proportion(
 		who: &Self::AccountId,
-		pool_id: StableAssetXcmPoolId,
+		local_pool_id: StableAssetXcmPoolId,
 		chain_id: ParachainId,
+		remote_pool_id: StableAssetPoolId,
 		amount: Self::Balance,
 		min_redeem_amounts: Vec<Self::Balance>,
 	) -> DispatchResult {
-		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+		Pools::<T>::try_mutate_exists(local_pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			let balance = pool_info.balances.get(&chain_id).copied().unwrap_or_else(Zero::zero);
+			let key = (chain_id, remote_pool_id);
+			let balance = pool_info.balances.get(&key).copied().unwrap_or_else(Zero::zero);
 			ensure!(balance >= amount, Error::<T>::RedeemOverLimit);
 			T::Assets::burn_from(pool_info.pool_asset, who, amount)?;
-			let remote_pool_id = pool_info
-				.remote_stable_assets
-				.get(&chain_id)
-				.copied()
-				.ok_or(Error::<T>::RemotePoolNotFound)?;
 			T::XcmInterface::send_redeem_proportion(
 				who.clone(),
 				chain_id,
@@ -506,8 +486,9 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 			)?;
 			Self::deposit_event(Event::RedeemedProportion {
 				redeemer: who.clone(),
-				pool_id,
+				local_pool_id,
 				chain_id,
+				remote_pool_id,
 				input_amount: amount,
 				min_redeem_amounts,
 			});
@@ -528,23 +509,20 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 
 	fn redeem_single(
 		who: &Self::AccountId,
-		pool_id: StableAssetXcmPoolId,
+		local_pool_id: StableAssetXcmPoolId,
 		chain_id: ParachainId,
+		remote_pool_id: StableAssetPoolId,
 		amount: Self::Balance,
 		i: PoolTokenIndex,
 		min_redeem_amount: Self::Balance,
 		asset_length: u32,
 	) -> DispatchResult {
-		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+		Pools::<T>::try_mutate_exists(local_pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			let balance = pool_info.balances.get(&chain_id).copied().unwrap_or_else(Zero::zero);
+			let key = (chain_id, remote_pool_id);
+			let balance = pool_info.balances.get(&key).copied().unwrap_or_else(Zero::zero);
 			ensure!(balance >= amount, Error::<T>::RedeemOverLimit);
 			T::Assets::burn_from(pool_info.pool_asset, who, amount)?;
-			let remote_pool_id = pool_info
-				.remote_stable_assets
-				.get(&chain_id)
-				.copied()
-				.ok_or(Error::<T>::RemotePoolNotFound)?;
 			T::XcmInterface::send_redeem_single(
 				who.clone(),
 				chain_id,
@@ -556,8 +534,9 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 			)?;
 			Self::deposit_event(Event::RedeemedSingle {
 				redeemer: who.clone(),
-				pool_id,
+				local_pool_id,
 				chain_id,
+				remote_pool_id,
 				input_amount: amount,
 				i,
 				min_redeem_amount,

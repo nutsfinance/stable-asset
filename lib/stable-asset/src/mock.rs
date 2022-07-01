@@ -94,7 +94,7 @@ type AtLeast64BitUnsigned = u128;
 
 pub type AssetId = i64;
 
-use crate::{ParachainId, StableAssetXcmPoolId};
+use crate::{ParachainId, StableAssetPoolId, StableAssetXcmPoolId};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
@@ -258,6 +258,7 @@ impl crate::traits::XcmInterface for XcmInterface {
 		_account_id: Self::AccountId,
 		_remote_pool_id: StableAssetXcmPoolId,
 		_chain_id: ParachainId,
+		_local_pool_id: StableAssetPoolId,
 		_mint_amount: Self::Balance,
 	) -> DispatchResult {
 		Ok(())
@@ -280,6 +281,7 @@ impl stable_asset::Config for Test {
 	type XcmInterface = XcmInterface;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
+	type XcmOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;
 }
 

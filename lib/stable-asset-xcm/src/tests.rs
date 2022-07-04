@@ -96,18 +96,6 @@ fn update_limit_pool_not_found() {
 }
 
 #[test]
-fn update_limit_failed_lower() {
-	new_test_ext().execute_with(|| {
-		create_pool();
-		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100));
-		assert_noop!(
-			StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 50),
-			Error::<Test>::NewLimitInvalid
-		);
-	});
-}
-
-#[test]
 fn mint_successful() {
 	new_test_ext().execute_with(|| {
 		let asset_id = create_pool();

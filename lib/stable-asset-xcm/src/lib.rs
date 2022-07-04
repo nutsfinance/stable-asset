@@ -244,7 +244,6 @@ pub mod pallet {
 	pub enum Error<T> {
 		InconsistentStorage,
 		InvalidPoolAsset,
-		NewLimitInvalid,
 		PoolNotFound,
 		RemotePoolNotFound,
 		RedeemOverLimit,
@@ -395,11 +394,6 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 		Pools::<T>::try_mutate_exists(local_pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let key = (chain_id, remote_pool_id);
-			let old_limit = pool_info.limits.get(&key);
-			match old_limit {
-				Some(x) => ensure!(limit >= *x, Error::<T>::NewLimitInvalid),
-				None => (),
-			}
 			pool_info.limits.insert(key, limit);
 			Self::deposit_event(Event::LimitUpdated {
 				local_pool_id,

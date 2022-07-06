@@ -25,15 +25,7 @@ default-features = false
 git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.25"
 
-[dev-dependencies]
-serde = { version = "1.0.101" }
-
-[dev-dependencies.sp-core]
-default-features = false
-git = "https://github.com/paritytech/substrate"
-branch = "polkadot-v0.9.25"
-
-[dev-dependencies.sp-io]
+[dependencies.sp-core]
 default-features = false
 git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.25"
@@ -53,6 +45,14 @@ default-features = false
 git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.25"
 
+[dev-dependencies.sp-io]
+default-features = false
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.25"
+
+[dev-dependencies]
+serde = { version = "1.0.101" }
+
 [features]
 default = ["std"]
 std = [
@@ -61,6 +61,7 @@ std = [
 	"frame-system/std",
 	"scale-info/std",
 	"sp-std/std",
+	"sp-core/std",
 	"sp-runtime/std",
 ]
 runtime-benchmarks = [
@@ -70,7 +71,3 @@ runtime-benchmarks = [
 	"sp-std/std",
 	"sp-runtime/std",
 ]
-
-[patch.crates-io]
-# TODO: https://github.com/paritytech/substrate/pull/11707
-syn = { git = "https://github.com/dtolnay/syn", rev = "19b3f0b53525ac7ab0882882a822adbd874dbe8c" }

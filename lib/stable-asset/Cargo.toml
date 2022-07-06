@@ -70,3 +70,7 @@ runtime-benchmarks = [
 	"sp-std/std",
 	"sp-runtime/std",
 ]
+
+[patch.crates-io]
+# TODO: https://github.com/paritytech/substrate/pull/11707
+syn = { git = "https://github.com/dtolnay/syn", rev = "19b3f0b53525ac7ab0882882a822adbd874dbe8c" }

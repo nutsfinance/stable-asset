@@ -34,7 +34,7 @@ pub mod weights;
 use crate::traits::{StableAssetXcm, XcmInterface};
 use frame_support::codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
-use frame_support::ensure;
+use frame_support::{ensure, transactional};
 use frame_support::traits::fungibles::Mutate;
 use frame_support::weights::Weight;
 use scale_info::TypeInfo;
@@ -277,7 +277,6 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(T::WeightInfo::mint())]
-		#[transactional]
 		pub fn mint(
 			origin: OriginFor<T>,
 			account_id: T::AccountId,
@@ -287,7 +286,14 @@ pub mod pallet {
 			amount: T::Balance,
 		) -> DispatchResult {
 			T::XcmOrigin::ensure_origin(origin)?;
-			<Self as StableAssetXcm>::mint(account_id, local_pool_id, chain_id, remote_pool_id, amount)
+			let result = <Self as StableAssetXcm>::mint(account_id.clone(), local_pool_id, chain_id, remote_pool_id, amount);
+			match result {
+				Ok(_) => (),
+				Err(_) => {
+					T::XcmInterface::send_mint_failed(account_id, chain_id, remote_pool_id, amount)?;
+				}
+			}
+			result
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_proportion())]
@@ -413,6 +419,7 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 	/// * `chain_id` - the ID of remote chain
 	/// * `amount` - the amount of tokens to be minted
 
+	#[transactional]
 	fn mint(
 		who: Self::AccountId,
 		local_pool_id: StableAssetXcmPoolId,
@@ -420,7 +427,7 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 		remote_pool_id: StableAssetPoolId,
 		amount: Self::Balance,
 	) -> DispatchResult {
-		let result = Pools::<T>::try_mutate_exists(local_pool_id, |maybe_pool_info| -> DispatchResult {
+		Pools::<T>::try_mutate_exists(local_pool_id, |maybe_pool_info| -> DispatchResult {
 			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 			let key = (chain_id, remote_pool_id);
 			let limit = pool_info.limits.get(&key).copied().ok_or(Error::<T>::MintOverLimit)?;
@@ -437,15 +444,7 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 				mint_amount: amount,
 			});
 			Ok(())
-		});
-
-		match result {
-			Ok(_) => (),
-			Err(_) => {
-				T::XcmInterface::send_mint_failed(who, chain_id, remote_pool_id, amount)?;
-			}
-		}
-		result
+		})
 	}
 
 	/// Redeem the token proportionally

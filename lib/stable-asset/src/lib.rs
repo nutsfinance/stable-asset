@@ -38,7 +38,7 @@ use frame_support::ensure;
 use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 use frame_support::{traits::Get, weights::Weight};
 use scale_info::TypeInfo;
-use sp_core::U256;
+use sp_core::U512;
 use sp_runtime::{
 	traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero},
 	SaturatedConversion,
@@ -681,12 +681,12 @@ impl<T: Config> Pallet<T> {
 		balances: &[T::AtLeast64BitUnsigned],
 		a: T::AtLeast64BitUnsigned,
 	) -> Option<T::AtLeast64BitUnsigned> {
-		let zero: U256 = U256::from(0u128);
-		let one: U256 = U256::from(1u128);
-		let mut sum: U256 = U256::from(0u128);
-		let mut ann: U256 = U256::from(a.saturated_into::<u128>());
-		let balance_size: U256 = U256::from(balances.len());
-		let a_precision_u256: U256 = U256::from(T::APrecision::get().saturated_into::<u128>());
+		let zero: U512 = U512::from(0u128);
+		let one: U512 = U512::from(1u128);
+		let mut sum: U512 = U512::from(0u128);
+		let mut ann: U512 = U512::from(a.saturated_into::<u128>());
+		let balance_size: U512 = U512::from(balances.len());
+		let a_precision_u256: U512 = U512::from(T::APrecision::get().saturated_into::<u128>());
 		for x in balances.iter() {
 			let balance: u128 = (*x).saturated_into::<u128>();
 			sum = sum.checked_add(balance.into())?;
@@ -696,19 +696,19 @@ impl<T: Config> Pallet<T> {
 			return Some(Zero::zero());
 		}
 
-		let mut prev_d: U256;
-		let mut d: U256 = sum;
+		let mut prev_d: U512;
+		let mut d: U512 = sum;
 		for _i in 0..NUMBER_OF_ITERATIONS_TO_CONVERGE {
-			let mut p_d: U256 = d;
+			let mut p_d: U512 = d;
 			for x in balances.iter() {
 				let balance: u128 = (*x).saturated_into::<u128>();
-				let div_op = U256::from(balance).checked_mul(balance_size)?;
+				let div_op = U512::from(balance).checked_mul(balance_size)?;
 				p_d = p_d.checked_mul(d)?.checked_div(div_op)?;
 			}
 			prev_d = d;
-			let t1: U256 = p_d.checked_mul(balance_size)?;
-			let t2: U256 = balance_size.checked_add(one)?.checked_mul(p_d)?;
-			let t3: U256 = ann
+			let t1: U512 = p_d.checked_mul(balance_size)?;
+			let t2: U512 = balance_size.checked_add(one)?.checked_mul(p_d)?;
+			let t3: U512 = ann
 				.checked_sub(a_precision_u256)?
 				.checked_mul(d)?
 				.checked_div(a_precision_u256)?
@@ -737,24 +737,24 @@ impl<T: Config> Pallet<T> {
 		target_d: T::AtLeast64BitUnsigned,
 		amplitude: T::AtLeast64BitUnsigned,
 	) -> Option<T::AtLeast64BitUnsigned> {
-		let one: U256 = U256::from(1u128);
-		let two: U256 = U256::from(2u128);
-		let mut c: U256 = U256::from(target_d.saturated_into::<u128>());
-		let mut sum: U256 = U256::from(0u128);
-		let mut ann: U256 = U256::from(amplitude.saturated_into::<u128>());
-		let balance_size: U256 = U256::from(balances.len());
-		let target_d_u256: U256 = U256::from(target_d.saturated_into::<u128>());
-		let a_precision_u256: U256 = U256::from(T::APrecision::get().saturated_into::<u128>());
+		let one: U512 = U512::from(1u128);
+		let two: U512 = U512::from(2u128);
+		let mut c: U512 = U512::from(target_d.saturated_into::<u128>());
+		let mut sum: U512 = U512::from(0u128);
+		let mut ann: U512 = U512::from(amplitude.saturated_into::<u128>());
+		let balance_size: U512 = U512::from(balances.len());
+		let target_d_u256: U512 = U512::from(target_d.saturated_into::<u128>());
+		let a_precision_u256: U512 = U512::from(T::APrecision::get().saturated_into::<u128>());
 
 		for (i, balance_ref) in balances.iter().enumerate() {
-			let balance: U256 = U256::from((*balance_ref).saturated_into::<u128>());
+			let balance: U512 = U512::from((*balance_ref).saturated_into::<u128>());
 			ann = ann.checked_mul(balance_size)?;
 			let token_index_usize = token_index as usize;
 			if i == token_index_usize {
 				continue;
 			}
 			sum = sum.checked_add(balance)?;
-			let div_op: U256 = balance.checked_mul(balance_size)?;
+			let div_op: U512 = balance.checked_mul(balance_size)?;
 			c = c.checked_mul(target_d_u256)?.checked_div(div_op)?
 		}
 
@@ -762,9 +762,9 @@ impl<T: Config> Pallet<T> {
 			.checked_mul(target_d_u256)?
 			.checked_mul(a_precision_u256)?
 			.checked_div(ann.checked_mul(balance_size)?)?;
-		let b: U256 = sum.checked_add(target_d_u256.checked_mul(a_precision_u256)?.checked_div(ann)?)?;
-		let mut prev_y: U256;
-		let mut y: U256 = target_d_u256;
+		let b: U512 = sum.checked_add(target_d_u256.checked_mul(a_precision_u256)?.checked_div(ann)?)?;
+		let mut prev_y: U512;
+		let mut y: U512 = target_d_u256;
 
 		for _i in 0..NUMBER_OF_ITERATIONS_TO_CONVERGE {
 			prev_y = y;

@@ -504,6 +504,10 @@ pub mod pallet {
 			value: T::AtLeast64BitUnsigned,
 			time: T::BlockNumber,
 		},
+		AssetModified {
+			pool_id: StableAssetPoolId,
+			asset_id: T::AssetId,
+		},
 	}
 
 	#[pallet::error]
@@ -759,6 +763,25 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			<Self as StableAsset>::send_mint_xcm(&who, pool_id, mint_amount, remote_pool_id)
+		}
+
+		#[pallet::weight(T::WeightInfo::modify_a())]
+		#[transactional]
+		pub fn modify_asset(
+			origin: OriginFor<T>,
+			pool_id: StableAssetPoolId,
+			new_asset_id: T::AssetId,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin.clone())?;
+			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				pool_info.pool_asset = new_asset_id;
+				Self::deposit_event(Event::AssetModified {
+					pool_id,
+					asset_id: new_asset_id,
+				});
+				Ok(())
+			})
 		}
 	}
 }

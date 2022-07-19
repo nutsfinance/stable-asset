@@ -276,6 +276,24 @@ pub mod pallet {
 			<Self as StableAssetXcm>::update_limit(local_pool_id, chain_id, remote_pool_id, limit)
 		}
 
+		#[pallet::weight(T::WeightInfo::update_limit())]
+		#[transactional]
+		pub fn update_balance(
+			origin: OriginFor<T>,
+			local_pool_id: StableAssetXcmPoolId,
+			chain_id: ParachainId,
+			remote_pool_id: StableAssetPoolId,
+			new_balance: T::Balance,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin.clone())?;
+			Pools::<T>::try_mutate_exists(local_pool_id, |maybe_pool_info| -> DispatchResult {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				let key = (chain_id, remote_pool_id);
+				pool_info.balances.insert(key, new_balance);
+				Ok(())
+			})
+		}
+
 		#[pallet::weight(T::WeightInfo::mint())]
 		pub fn mint(
 			origin: OriginFor<T>,

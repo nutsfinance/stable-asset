@@ -488,6 +488,8 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 			let balance = pool_info.balances.get(&key).copied().unwrap_or_else(Zero::zero);
 			ensure!(balance >= amount, Error::<T>::RedeemOverLimit);
 			T::Assets::burn_from(pool_info.pool_asset, who, amount)?;
+			let new_balance = balance - amount;
+			pool_info.balances.insert(key, new_balance);
 			T::XcmInterface::send_redeem_proportion(
 				who.clone(),
 				chain_id,
@@ -534,6 +536,8 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 			let balance = pool_info.balances.get(&key).copied().unwrap_or_else(Zero::zero);
 			ensure!(balance >= amount, Error::<T>::RedeemOverLimit);
 			T::Assets::burn_from(pool_info.pool_asset, who, amount)?;
+			let new_balance = balance - amount;
+			pool_info.balances.insert(key, new_balance);
 			T::XcmInterface::send_redeem_single(
 				who.clone(),
 				chain_id,

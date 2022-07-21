@@ -34,12 +34,12 @@ pub mod weights;
 use crate::traits::{StableAssetXcm, XcmInterface};
 use frame_support::codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
-use frame_support::{ensure, transactional};
 use frame_support::traits::fungibles::Mutate;
 use frame_support::weights::Weight;
+use frame_support::{ensure, transactional};
 use scale_info::TypeInfo;
 
-use sp_runtime::traits::Zero;
+use sp_runtime::traits::{CheckedAdd, CheckedSub, Zero};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
@@ -165,14 +165,14 @@ pub mod pallet {
 		transactional, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::Zero;
+	use sp_runtime::traits::{CheckedAdd, CheckedSub, Zero};
 	use sp_std::prelude::*;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type AssetId: Parameter + Ord + Copy;
-		type Balance: Parameter + Codec + Copy + Ord + Zero;
+		type Balance: Parameter + Codec + Copy + Ord + Zero + CheckedAdd + CheckedSub;
 		type Assets: fungibles::Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::Balance>
 			+ fungibles::Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::Balance>
 			+ fungibles::Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::Balance>;
@@ -304,7 +304,8 @@ pub mod pallet {
 			amount: T::Balance,
 		) -> DispatchResult {
 			T::XcmOrigin::ensure_origin(origin)?;
-			let result = <Self as StableAssetXcm>::mint(account_id.clone(), local_pool_id, chain_id, remote_pool_id, amount);
+			let result =
+				<Self as StableAssetXcm>::mint(account_id.clone(), local_pool_id, chain_id, remote_pool_id, amount);
 			match result {
 				Ok(_) => (),
 				Err(_) => {
@@ -450,8 +451,8 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 			let key = (chain_id, remote_pool_id);
 			let limit = pool_info.limits.get(&key).copied().ok_or(Error::<T>::MintOverLimit)?;
 			let balance = pool_info.balances.get(&key).copied().unwrap_or_else(Zero::zero);
-			ensure!(balance + amount <= limit, Error::<T>::MintOverLimit);
-			let new_balance = balance + amount;
+			let new_balance = balance.checked_add(&amount).ok_or(Error::<T>::MintOverLimit)?;
+			ensure!(new_balance <= limit, Error::<T>::MintOverLimit);
 			pool_info.balances.insert(key, new_balance);
 			T::Assets::mint_into(pool_info.pool_asset, &who, amount)?;
 			Self::deposit_event(Event::Minted {
@@ -488,7 +489,7 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 			let balance = pool_info.balances.get(&key).copied().unwrap_or_else(Zero::zero);
 			ensure!(balance >= amount, Error::<T>::RedeemOverLimit);
 			T::Assets::burn_from(pool_info.pool_asset, who, amount)?;
-			let new_balance = balance - amount;
+			let new_balance = balance.checked_sub(&amount).ok_or(Error::<T>::RedeemOverLimit)?;
 			pool_info.balances.insert(key, new_balance);
 			T::XcmInterface::send_redeem_proportion(
 				who.clone(),
@@ -536,7 +537,7 @@ impl<T: Config> StableAssetXcm for Pallet<T> {
 			let balance = pool_info.balances.get(&key).copied().unwrap_or_else(Zero::zero);
 			ensure!(balance >= amount, Error::<T>::RedeemOverLimit);
 			T::Assets::burn_from(pool_info.pool_asset, who, amount)?;
-			let new_balance = balance - amount;
+			let new_balance = balance.checked_sub(&amount).ok_or(Error::<T>::RedeemOverLimit)?;
 			pool_info.balances.insert(key, new_balance);
 			T::XcmInterface::send_redeem_single(
 				who.clone(),

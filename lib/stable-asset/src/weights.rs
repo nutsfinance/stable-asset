@@ -59,6 +59,11 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
+	fn modify_fees() -> Weight {
+		(21_186_000 as Weight)
+			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
+			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
+	}
 	fn mint(u: u32) -> Weight {
 		(85_694_000 as Weight) // Standard Error: 187_000
 			.saturating_add((46_172_000 as Weight).saturating_mul(u as Weight))

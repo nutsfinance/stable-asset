@@ -74,6 +74,7 @@ pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId
 pub trait WeightInfo {
 	fn create_pool() -> Weight;
 	fn modify_a() -> Weight;
+	fn modify_fees() -> Weight;
 	fn mint(u: u32) -> Weight;
 	fn swap(u: u32) -> Weight;
 	fn redeem_proportion(u: u32) -> Weight;
@@ -462,6 +463,12 @@ pub mod pallet {
 			value: T::AtLeast64BitUnsigned,
 			time: T::BlockNumber,
 		},
+		FeeModified {
+			pool_id: StableAssetPoolId,
+			mint_fee: T::AtLeast64BitUnsigned,
+			swap_fee: T::AtLeast64BitUnsigned,
+			redeem_fee: T::AtLeast64BitUnsigned,
+		},
 	}
 
 	#[pallet::error]
@@ -641,6 +648,40 @@ pub mod pallet {
 		) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
 			<Self as StableAsset>::modify_a(pool_id, a, future_a_block)
+		}
+
+		#[pallet::weight(T::WeightInfo::modify_fees())]
+		#[transactional]
+		pub fn modify_fees(
+			origin: OriginFor<T>,
+			pool_id: StableAssetPoolId,
+			mint_fee: Option<T::AtLeast64BitUnsigned>,
+			swap_fee: Option<T::AtLeast64BitUnsigned>,
+			redeem_fee: Option<T::AtLeast64BitUnsigned>,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin.clone())?;
+			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				match mint_fee {
+					Some(fee) => pool_info.mint_fee = fee,
+					None => (),
+				}
+				match swap_fee {
+					Some(fee) => pool_info.swap_fee = fee,
+					None => (),
+				}
+				match redeem_fee {
+					Some(fee) => pool_info.redeem_fee = fee,
+					None => (),
+				}
+				Self::deposit_event(Event::FeeModified {
+					pool_id,
+					mint_fee: pool_info.mint_fee,
+					swap_fee: pool_info.swap_fee,
+					redeem_fee: pool_info.redeem_fee,
+				});
+				Ok(())
+			})
 		}
 	}
 }

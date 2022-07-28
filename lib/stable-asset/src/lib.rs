@@ -646,7 +646,7 @@ pub mod pallet {
 			a: T::AtLeast64BitUnsigned,
 			future_a_block: T::BlockNumber,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin.clone())?;
+			T::ListingOrigin::ensure_origin(origin)?;
 			<Self as StableAsset>::modify_a(pool_id, a, future_a_block)
 		}
 
@@ -659,20 +659,17 @@ pub mod pallet {
 			swap_fee: Option<T::AtLeast64BitUnsigned>,
 			redeem_fee: Option<T::AtLeast64BitUnsigned>,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin.clone())?;
+			T::ListingOrigin::ensure_origin(origin)?;
 			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-				match mint_fee {
-					Some(fee) => pool_info.mint_fee = fee,
-					None => (),
+				if let Some(fee) = mint_fee {
+					pool_info.mint_fee = fee;
 				}
-				match swap_fee {
-					Some(fee) => pool_info.swap_fee = fee,
-					None => (),
+				if let Some(fee) = swap_fee {
+					pool_info.swap_fee = fee;
 				}
-				match redeem_fee {
-					Some(fee) => pool_info.redeem_fee = fee,
-					None => (),
+				if let Some(fee) = redeem_fee {
+					pool_info.redeem_fee = fee;
 				}
 				Self::deposit_event(Event::FeeModified {
 					pool_id,
@@ -996,7 +993,7 @@ impl<T: Config> Pallet<T> {
 		let dx: T::AtLeast64BitUnsigned = y
 			.checked_sub(&balances[input_index_usize])?
 			.checked_sub(&one)?
-			.checked_div(&pool_info.precisions[output_index_usize])?
+			.checked_div(&pool_info.precisions[input_index_usize])?
 			.checked_add(&swap_exact_over_amount)?;
 
 		Some(SwapResult {

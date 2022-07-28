@@ -1067,6 +1067,37 @@ fn swap_exact_success() {
 }
 
 #[test]
+fn swap_exact_success_different_precision() {
+	new_test_ext().execute_with(|| {
+		let balances = vec![100000000000u128, 200000000000u128];
+		let a = 10000u128;
+		let current_d = StableAsset::get_d(&balances, a).unwrap();
+		let pool_info = StableAssetPoolInfo {
+			pool_asset: 0,
+			assets: vec![1, 2],
+			precisions: vec![1u128, 100000u128],
+			mint_fee: 10000000u128,
+			swap_fee: 20000000u128,
+			redeem_fee: 50000000u128,
+			total_supply: current_d,
+			a,
+			a_block: 0,
+			future_a: a,
+			future_a_block: 100,
+			balances,
+			fee_recipient: 2,
+			account_id: 3,
+			yield_recipient: 1,
+			precision: 1000000000000000000u128,
+		};
+		let amount = 1000345u128;
+		let result = StableAsset::get_swap_amount_exact(&pool_info, 0, 1, amount).unwrap();
+		let result_two = StableAsset::get_swap_amount(&pool_info, 0, 1, result.dx).unwrap();
+		assert_eq!(result_two.dy >= amount, true);
+	});
+}
+
+#[test]
 fn modify_fees_successful() {
 	new_test_ext().execute_with(|| {
 		let pool_tokens = create_pool();

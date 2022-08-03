@@ -75,6 +75,7 @@ pub trait WeightInfo {
 	fn create_pool() -> Weight;
 	fn modify_a() -> Weight;
 	fn modify_fees() -> Weight;
+	fn modify_recipients() -> Weight;
 	fn mint(u: u32) -> Weight;
 	fn swap(u: u32) -> Weight;
 	fn redeem_proportion(u: u32) -> Weight;
@@ -469,6 +470,11 @@ pub mod pallet {
 			swap_fee: T::AtLeast64BitUnsigned,
 			redeem_fee: T::AtLeast64BitUnsigned,
 		},
+		RecipientModified {
+			pool_id: StableAssetPoolId,
+			fee_recipient: T::AccountId,
+			yield_recipient: T::AccountId,
+		},
 	}
 
 	#[pallet::error]
@@ -676,6 +682,32 @@ pub mod pallet {
 					mint_fee: pool_info.mint_fee,
 					swap_fee: pool_info.swap_fee,
 					redeem_fee: pool_info.redeem_fee,
+				});
+				Ok(())
+			})
+		}
+
+		#[pallet::weight(T::WeightInfo::modify_recipients())]
+		#[transactional]
+		pub fn modify_recipients(
+			origin: OriginFor<T>,
+			pool_id: StableAssetPoolId,
+			fee_recipient: Option<T::AccountId>,
+			yield_recipient: Option<T::AccountId>,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin)?;
+			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				if let Some(recipient) = fee_recipient {
+					pool_info.fee_recipient = recipient;
+				}
+				if let Some(recipient) = yield_recipient {
+					pool_info.yield_recipient = recipient;
+				}
+				Self::deposit_event(Event::RecipientModified {
+					pool_id,
+					fee_recipient: pool_info.fee_recipient.clone(),
+					yield_recipient: pool_info.yield_recipient.clone(),
 				});
 				Ok(())
 			})

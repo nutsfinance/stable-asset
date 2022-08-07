@@ -78,6 +78,9 @@ pub struct StableAssetPoolInfo<AssetId, AtLeast64BitUnsigned, Balance, AccountId
 pub trait WeightInfo {
 	fn create_pool() -> Weight;
 	fn modify_a() -> Weight;
+	fn modify_asset() -> Weight;
+	fn modify_fees() -> Weight;
+	fn modify_recipients() -> Weight;
 	fn mint(u: u32) -> Weight;
 	fn mint_xcm(u: u32) -> Weight;
 	fn send_mint_xcm() -> Weight;
@@ -165,7 +168,7 @@ pub mod traits {
 			i: PoolTokenIndex,
 			min_redeem_amount: Self::Balance,
 			asset_length: u32,
-		) -> DispatchResult;
+		) -> sp_std::result::Result<(Self::Balance, Self::Balance), DispatchError>;
 
 		fn redeem_multi(
 			who: &Self::AccountId,
@@ -508,6 +511,17 @@ pub mod pallet {
 			pool_id: StableAssetPoolId,
 			asset_id: T::AssetId,
 		},
+		FeeModified {
+			pool_id: StableAssetPoolId,
+			mint_fee: T::AtLeast64BitUnsigned,
+			swap_fee: T::AtLeast64BitUnsigned,
+			redeem_fee: T::AtLeast64BitUnsigned,
+		},
+		RecipientModified {
+			pool_id: StableAssetPoolId,
+			fee_recipient: T::AccountId,
+			yield_recipient: T::AccountId,
+		},
 	}
 
 	#[pallet::error]
@@ -663,7 +677,8 @@ pub mod pallet {
 			asset_length: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			<Self as StableAsset>::redeem_single(&who, pool_id, amount, i, min_redeem_amount, asset_length)
+			<Self as StableAsset>::redeem_single(&who, pool_id, amount, i, min_redeem_amount, asset_length)?;
+			Ok(())
 		}
 
 		#[pallet::weight(T::WeightInfo::redeem_multi(amounts.len() as u32))]
@@ -688,6 +703,63 @@ pub mod pallet {
 		) -> DispatchResult {
 			T::ListingOrigin::ensure_origin(origin.clone())?;
 			<Self as StableAsset>::modify_a(pool_id, a, future_a_block)
+		}
+
+		#[pallet::weight(T::WeightInfo::modify_fees())]
+		#[transactional]
+		pub fn modify_fees(
+			origin: OriginFor<T>,
+			pool_id: StableAssetPoolId,
+			mint_fee: Option<T::AtLeast64BitUnsigned>,
+			swap_fee: Option<T::AtLeast64BitUnsigned>,
+			redeem_fee: Option<T::AtLeast64BitUnsigned>,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin)?;
+			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				if let Some(fee) = mint_fee {
+					pool_info.mint_fee = fee;
+				}
+				if let Some(fee) = swap_fee {
+					pool_info.swap_fee = fee;
+				}
+				if let Some(fee) = redeem_fee {
+					pool_info.redeem_fee = fee;
+				}
+				Self::deposit_event(Event::FeeModified {
+					pool_id,
+					mint_fee: pool_info.mint_fee,
+					swap_fee: pool_info.swap_fee,
+					redeem_fee: pool_info.redeem_fee,
+				});
+				Ok(())
+			})
+		}
+
+		#[pallet::weight(T::WeightInfo::modify_recipients())]
+		#[transactional]
+		pub fn modify_recipients(
+			origin: OriginFor<T>,
+			pool_id: StableAssetPoolId,
+			fee_recipient: Option<T::AccountId>,
+			yield_recipient: Option<T::AccountId>,
+		) -> DispatchResult {
+			T::ListingOrigin::ensure_origin(origin)?;
+			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				if let Some(recipient) = fee_recipient {
+					pool_info.fee_recipient = recipient;
+				}
+				if let Some(recipient) = yield_recipient {
+					pool_info.yield_recipient = recipient;
+				}
+				Self::deposit_event(Event::RecipientModified {
+					pool_id,
+					fee_recipient: pool_info.fee_recipient.clone(),
+					yield_recipient: pool_info.yield_recipient.clone(),
+				});
+				Ok(())
+			})
 		}
 
 		#[pallet::weight(T::WeightInfo::mint_xcm(amounts.len() as u32))]
@@ -750,7 +822,8 @@ pub mod pallet {
 			T::XcmOrigin::ensure_origin(origin)?;
 			let pool_info = Self::pool(pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			T::Assets::transfer(pool_info.pool_asset, &pool_info.account_id, &account_id, amount, false)?;
-			<Self as StableAsset>::redeem_single(&account_id, pool_id, amount, i, min_redeem_amount, asset_length)
+			<Self as StableAsset>::redeem_single(&account_id, pool_id, amount, i, min_redeem_amount, asset_length)?;
+			Ok(())
 		}
 
 		#[pallet::weight(T::WeightInfo::send_mint_xcm())]
@@ -765,7 +838,7 @@ pub mod pallet {
 			<Self as StableAsset>::send_mint_xcm(&who, pool_id, mint_amount, remote_pool_id)
 		}
 
-		#[pallet::weight(T::WeightInfo::modify_a())]
+		#[pallet::weight(T::WeightInfo::modify_asset())]
 		#[transactional]
 		pub fn modify_asset(
 			origin: OriginFor<T>,
@@ -1096,7 +1169,7 @@ impl<T: Config> Pallet<T> {
 		let dx: T::AtLeast64BitUnsigned = y
 			.checked_sub(&balances[input_index_usize])?
 			.checked_sub(&one)?
-			.checked_div(&pool_info.precisions[output_index_usize])?
+			.checked_div(&pool_info.precisions[input_index_usize])?
 			.checked_add(&swap_exact_over_amount)?;
 
 		Some(SwapResult {
@@ -1796,62 +1869,65 @@ impl<T: Config> StableAsset for Pallet<T> {
 		i: PoolTokenIndex,
 		min_redeem_amount: Self::Balance,
 		asset_length: u32,
-	) -> DispatchResult {
-		Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
-			let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
-			Self::collect_yield(pool_id, pool_info)?;
-			let RedeemSingleResult {
-				dy,
-				fee_amount,
-				total_supply,
-				balances,
-				redeem_amount,
-			} = Self::get_redeem_single_amount(pool_info, amount, i)?;
-			let i_usize = i as usize;
-			let pool_size = pool_info.assets.len();
-			let asset_length_usize = asset_length as usize;
-			ensure!(asset_length_usize == pool_size, Error::<T>::ArgumentsError);
-			ensure!(dy >= min_redeem_amount, Error::<T>::RedeemUnderMin);
-			if fee_amount > Zero::zero() {
-				T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, false)?;
-			}
-			T::Assets::transfer(pool_info.assets[i_usize], &pool_info.account_id, who, dy, false)?;
-			T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
-
-			let mut amounts: Vec<T::Balance> = Vec::new();
-			for idx in 0..pool_size {
-				if idx == i_usize {
-					amounts.push(dy);
-				} else {
-					amounts.push(Zero::zero());
+	) -> sp_std::result::Result<(Self::Balance, Self::Balance), DispatchError> {
+		Pools::<T>::try_mutate_exists(
+			pool_id,
+			|maybe_pool_info| -> sp_std::result::Result<(Self::Balance, Self::Balance), DispatchError> {
+				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
+				Self::collect_yield(pool_id, pool_info)?;
+				let RedeemSingleResult {
+					dy,
+					fee_amount,
+					total_supply,
+					balances,
+					redeem_amount,
+				} = Self::get_redeem_single_amount(pool_info, amount, i)?;
+				let i_usize = i as usize;
+				let pool_size = pool_info.assets.len();
+				let asset_length_usize = asset_length as usize;
+				ensure!(asset_length_usize == pool_size, Error::<T>::ArgumentsError);
+				ensure!(dy >= min_redeem_amount, Error::<T>::RedeemUnderMin);
+				if fee_amount > Zero::zero() {
+					T::Assets::transfer(pool_info.pool_asset, who, &pool_info.fee_recipient, fee_amount, false)?;
 				}
-			}
+				T::Assets::transfer(pool_info.assets[i_usize], &pool_info.account_id, who, dy, false)?;
+				T::Assets::burn_from(pool_info.pool_asset, who, redeem_amount)?;
 
-			pool_info.total_supply = total_supply;
-			pool_info.balances = balances;
-			// Since the output amounts are round down, collect fee updates pool balances and total supply.
-			Self::collect_fee(pool_id, pool_info)?;
-			let a: T::AtLeast64BitUnsigned = Self::get_a(
-				pool_info.a,
-				pool_info.a_block,
-				pool_info.future_a,
-				pool_info.future_a_block,
-			)
-			.ok_or(Error::<T>::Math)?;
-			Self::deposit_event(Event::RedeemedSingle {
-				redeemer: who.clone(),
-				pool_id,
-				a,
-				input_amount: amount,
-				output_asset: pool_info.assets[i as usize],
-				min_output_amount: min_redeem_amount,
-				balances: pool_info.balances.clone(),
-				total_supply: pool_info.total_supply,
-				fee_amount,
-				output_amount: dy,
-			});
-			Ok(())
-		})
+				let mut amounts: Vec<T::Balance> = Vec::new();
+				for idx in 0..pool_size {
+					if idx == i_usize {
+						amounts.push(dy);
+					} else {
+						amounts.push(Zero::zero());
+					}
+				}
+
+				pool_info.total_supply = total_supply;
+				pool_info.balances = balances;
+				// Since the output amounts are round down, collect fee updates pool balances and total supply.
+				Self::collect_fee(pool_id, pool_info)?;
+				let a: T::AtLeast64BitUnsigned = Self::get_a(
+					pool_info.a,
+					pool_info.a_block,
+					pool_info.future_a,
+					pool_info.future_a_block,
+				)
+				.ok_or(Error::<T>::Math)?;
+				Self::deposit_event(Event::RedeemedSingle {
+					redeemer: who.clone(),
+					pool_id,
+					a,
+					input_amount: amount,
+					output_asset: pool_info.assets[i as usize],
+					min_output_amount: min_redeem_amount,
+					balances: pool_info.balances.clone(),
+					total_supply: pool_info.total_supply,
+					fee_amount,
+					output_amount: dy,
+				});
+				Ok((amount, dy))
+			},
+		)
 	}
 
 	/// Redeem the token into desired underlying tokens

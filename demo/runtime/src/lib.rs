@@ -37,7 +37,10 @@ pub use frame_support::{
 	construct_runtime,
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
-	traits::{Currency, EnsureOrigin, Everything, KeyOwnerProofSystem, OnUnbalanced, Randomness, ConstU8, ConstU32, ConstU64, ConstU128},
+	traits::{
+		ConstU128, ConstU16, ConstU32, ConstU64, ConstU8, Currency, EnsureOrigin, Everything, KeyOwnerProofSystem,
+		OnUnbalanced, Randomness,
+	},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		IdentityFee, Weight,
@@ -53,6 +56,8 @@ pub use sp_runtime::{Perbill, Permill};
 
 /// Import the stable_asset pallet.
 pub use nutsfinance_stable_asset;
+use nutsfinance_stable_asset::{ParachainId, StableAssetXcmPoolId};
+use nutsfinance_stable_asset_xcm::{PoolTokenIndex, StableAssetPoolId};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -195,7 +200,7 @@ impl frame_system::Config for Runtime {
 	/// Weight information for the extrinsics of this pallet.
 	type SystemWeightInfo = ();
 	/// This is used as an identifier of the chain. 42 is the generic substrate prefix.
-	type SS58Prefix = ConstU8<42>;
+	type SS58Prefix = ConstU16<42>;
 
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
@@ -221,7 +226,7 @@ impl pallet_grandpa::Config for Runtime {
 	type HandleEquivocation = ();
 
 	type WeightInfo = ();
-	type MaxAuthorities = MaxAuthorities;
+	type MaxAuthorities = ConstU32<32>;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -247,10 +252,11 @@ impl pallet_balances::Config for Runtime {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
+	type Event = Event;
 	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
-	type TransactionByteFee = ConstU128<1>;
 	type OperationalFeeMultiplier = ConstU8<5>;
 	type WeightToFee = IdentityFee<Balance>;
+	type LengthToFee = IdentityFee<Balance>;
 	type FeeMultiplierUpdate = ();
 }
 
@@ -276,7 +282,7 @@ impl EnsureOrigin<Origin> for EnsureStableAsset {
 	#[cfg(feature = "runtime-benchmarks")]
 	fn successful_origin() -> Origin {
 		let module_id = StableAssetPalletId::get();
-		let account_id: AccountId = module_id.into_account();
+		let account_id: AccountId = module_id.into_account_truncating();
 		Origin::from(RawOrigin::Signed(account_id))
 	}
 }
@@ -317,7 +323,7 @@ pub struct FrameAssets;
 impl Mutate<AccountId> for FrameAssets {
 	fn mint_into(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
 		let pallet_id = StableAssetPalletId::get();
-		let account_id: AccountId = pallet_id.into_account();
+		let account_id: AccountId = pallet_id.into_account_truncating();
 		let raw_origin = RawOrigin::Signed(account_id.clone());
 		let origin: Origin = raw_origin.into();
 
@@ -335,7 +341,7 @@ impl Mutate<AccountId> for FrameAssets {
 
 	fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance) -> Result<Balance, DispatchError> {
 		let pallet_id = StableAssetPalletId::get();
-		let account_id: AccountId = pallet_id.into_account();
+		let account_id: AccountId = pallet_id.into_account_truncating();
 		let raw_origin = RawOrigin::Signed(account_id.clone());
 		let origin: Origin = raw_origin.into();
 
@@ -371,7 +377,7 @@ impl Inspect<AccountId> for FrameAssets {
 		todo!()
 	}
 
-	fn can_deposit(_asset: Self::AssetId, _who: &AccountId, _amount: Balance) -> DepositConsequence {
+	fn can_deposit(_asset: Self::AssetId, _who: &AccountId, _amount: Balance, _mint: bool) -> DepositConsequence {
 		todo!()
 	}
 
@@ -410,8 +416,120 @@ impl nutsfinance_stable_asset::traits::ValidateAssetId<u32> for EnsurePoolAssetI
 		true
 	}
 }
+pub struct EnsureXcmPoolAssetId;
+impl nutsfinance_stable_asset_xcm::traits::ValidateAssetId<u32> for EnsureXcmPoolAssetId {
+	fn validate(_currency_id: u32) -> bool {
+		true
+	}
+}
+
 parameter_types! {
 	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
+	pub const StableAssetXcmPalletId: PalletId = PalletId(*b"nuts/xcm");
+}
+
+pub struct StableAssetXcmInterface;
+impl nutsfinance_stable_asset::traits::XcmInterface for StableAssetXcmInterface {
+	type Balance = Balance;
+	type AccountId = AccountId;
+
+	fn send_mint_call_to_xcm(
+		account_id: Self::AccountId,
+		remote_pool_id: StableAssetXcmPoolId,
+		chain_id: ParachainId,
+		local_pool_id: StableAssetPoolId,
+		mint_amount: Self::Balance,
+	) -> frame_support::dispatch::DispatchResult {
+		let raw_origin = RawOrigin::Signed(account_id.clone());
+		let origin: Origin = raw_origin.into();
+		let call = Call::StableAssetXcm(nutsfinance_stable_asset_xcm::Call::mint {
+			account_id,
+			local_pool_id: remote_pool_id,
+			chain_id,
+			remote_pool_id: local_pool_id,
+			amount: mint_amount,
+		});
+		call.dispatch(origin).map_err(|x| x.error)?;
+		Ok(())
+	}
+}
+
+pub struct StableAssetMintXcmInterface;
+impl nutsfinance_stable_asset_xcm::traits::XcmInterface for StableAssetMintXcmInterface {
+	type Balance = Balance;
+	type AccountId = AccountId;
+
+	fn send_mint_failed(
+		account_id: Self::AccountId,
+		_chain_id: nutsfinance_stable_asset_xcm::ParachainId,
+		pool_id: StableAssetPoolId,
+		mint_amount: Self::Balance,
+	) -> frame_support::dispatch::DispatchResult {
+		let raw_origin = RawOrigin::Signed(account_id.clone());
+		let origin: Origin = raw_origin.into();
+		let call = Call::StableAsset(nutsfinance_stable_asset::Call::mint_xcm_fail {
+			account_id,
+			pool_id,
+			mint_amount,
+		});
+		call.dispatch(origin).map_err(|x| x.error)?;
+		Ok(())
+	}
+
+	fn send_redeem_proportion(
+		account_id: Self::AccountId,
+		_chain_id: nutsfinance_stable_asset_xcm::ParachainId,
+		pool_id: StableAssetPoolId,
+		amount: Self::Balance,
+		min_redeem_amounts: Vec<Self::Balance>,
+	) -> frame_support::dispatch::DispatchResult {
+		let raw_origin = RawOrigin::Signed(account_id.clone());
+		let origin: Origin = raw_origin.into();
+		let call = Call::StableAsset(nutsfinance_stable_asset::Call::redeem_proportion_xcm {
+			account_id,
+			pool_id,
+			amount,
+			min_redeem_amounts,
+		});
+		call.dispatch(origin).map_err(|x| x.error)?;
+		Ok(())
+	}
+
+	fn send_redeem_single(
+		account_id: Self::AccountId,
+		_chain_id: nutsfinance_stable_asset_xcm::ParachainId,
+		pool_id: StableAssetPoolId,
+		amount: Self::Balance,
+		i: PoolTokenIndex,
+		min_redeem_amount: Self::Balance,
+		asset_length: u32,
+	) -> frame_support::dispatch::DispatchResult {
+		let raw_origin = RawOrigin::Signed(account_id.clone());
+		let origin: Origin = raw_origin.into();
+		let call = Call::StableAsset(nutsfinance_stable_asset::Call::redeem_single_xcm {
+			account_id,
+			pool_id,
+			amount,
+			i,
+			min_redeem_amount,
+			asset_length,
+		});
+		call.dispatch(origin).map_err(|x| x.error)?;
+		Ok(())
+	}
+}
+
+impl nutsfinance_stable_asset_xcm::Config for Runtime {
+	type Event = Event;
+	type AssetId = AssetId;
+	type Balance = Balance;
+	type Assets = FrameAssets;
+	type PalletId = StableAssetXcmPalletId;
+	type WeightInfo = ();
+	type EnsurePoolAssetId = EnsureXcmPoolAssetId;
+	type XcmInterface = StableAssetMintXcmInterface;
+	type ListingOrigin = EnsureStableAsset;
+	type XcmOrigin = EnsureStableAsset;
 }
 
 /// Configure the pallet nutsfinance_stable_asset in pallets/nutsfinance_stable_asset.
@@ -421,6 +539,7 @@ impl nutsfinance_stable_asset::Config for Runtime {
 	type Balance = Balance;
 	type Assets = FrameAssets;
 	type PalletId = StableAssetPalletId;
+	type ChainId = ConstU32<1000>;
 
 	type AtLeast64BitUnsigned = AtLeast64BitUnsigned;
 	type FeePrecision = ConstU128<10_000_000_000>;
@@ -429,7 +548,9 @@ impl nutsfinance_stable_asset::Config for Runtime {
 	type SwapExactOverAmount = ConstU128<100>;
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
+	type XcmOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;
+	type XcmInterface = StableAssetXcmInterface;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -447,8 +568,8 @@ construct_runtime!(
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
-		// Include the custom logic from the nutsfinance_stable_asset pallet in the runtime.
 		StableAsset: nutsfinance_stable_asset,
+		StableAssetXcm: nutsfinance_stable_asset_xcm,
 	}
 );
 

@@ -191,6 +191,31 @@ fn redeem_proportion_successful() {
 }
 
 #[test]
+fn redeem_proportion_pool_not_found() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(2);
+		assert_noop!(
+			StableAsset::redeem_proportion(Origin::signed(2), 0, 1, 2, 10000, vec![0u128, 0u128]),
+			Error::<Test>::PoolNotFound
+		);
+	});
+}
+
+#[test]
+fn redeem_proportion_over_limit() {
+	new_test_ext().execute_with(|| {
+		create_pool();
+		System::set_block_number(2);
+		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100000));
+		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 20000));
+		assert_noop!(
+			StableAsset::redeem_proportion(Origin::signed(2), 0, 1, 2, 10000000000u128, vec![0u128, 0u128]),
+			Error::<Test>::RedeemOverLimit
+		);
+	});
+}
+
+#[test]
 fn redeem_single_successful() {
 	new_test_ext().execute_with(|| {
 		let asset_id = create_pool();
@@ -228,5 +253,29 @@ fn redeem_single_successful() {
 		} else {
 			panic!("Unexpected event");
 		}
+	});
+}
+
+#[test]
+fn redeem_single_pool_not_found() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			StableAsset::redeem_single(Origin::signed(2), 0, 1, 2, 10000, 1, 0u128, 2),
+			Error::<Test>::PoolNotFound
+		);
+	});
+}
+
+#[test]
+fn redeem_single_over_limit() {
+	new_test_ext().execute_with(|| {
+		create_pool();
+		System::set_block_number(2);
+		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100000));
+		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 20000));
+		assert_noop!(
+			StableAsset::redeem_single(Origin::signed(2), 0, 1, 2, 1000000000000u128, 1, 0u128, 2),
+			Error::<Test>::RedeemOverLimit
+		);
 	});
 }

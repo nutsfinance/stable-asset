@@ -13,8 +13,9 @@ async function main() {
 
     const assetA = 0;
     const assetB = 1;
-    const assetC = 2;
-    const assetIds = [assetA, assetB, assetC];
+    const stableAssetId = 2;
+    const stableAssetXcmId = 3;
+    const assetIds = [assetA, assetB, stableAssetId, stableAssetXcmId];
     const pooledAssets = [assetA, assetB];
     for (let asset of assetIds) {
         console.info(`Creating asset ${asset}...`)
@@ -29,7 +30,7 @@ async function main() {
     }
 
     console.info('Creating pool...');
-    await includedInBlock(alice, api.tx.stableAsset.createPool(assetC, pooledAssets,
+    await includedInBlock(alice, api.tx.stableAsset.createPool(stableAssetId, pooledAssets,
         [1, 1],
         10000000,
         20000000,
@@ -38,8 +39,13 @@ async function main() {
         alice.address,
         alice.address,
         10000000000));
+    
+    await includedInBlock(alice, api.tx.stableAssetXcm.createPool(stableAssetXcmId));
+    await includedInBlock(alice, api.tx.stableAssetXcm.updateLimit(0, 1000, 0, "1000000000000000000"));
+
 
     let poolId = 0;
+    let chainId = 1000;
     // Detect asset id of lp asset of the created pool
     let poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
     console.info(`Total Supply: ${poolInfo.totalSupply.toHuman()}`);
@@ -47,7 +53,8 @@ async function main() {
     console.info(`Balances: ${poolInfo.balances.toHuman()}`);
 
     console.info('Setting minter/burner');
-    await includedInBlock(alice, api.tx.assets.setTeam(assetC, poolInfo.accountId, poolInfo.accountId, alice.address));
+    await includedInBlock(alice, api.tx.assets.setTeam(stableAssetId, poolInfo.accountId, poolInfo.accountId, alice.address));
+    await includedInBlock(alice, api.tx.assets.setTeam(stableAssetXcmId, poolInfo.accountId, poolInfo.accountId, alice.address));
 
     console.info('Minting');
     await includedInBlock(alice, api.tx.stableAsset.mint(poolId, [10000000, 20000000], 0));
@@ -78,6 +85,21 @@ async function main() {
     poolInfo = (await api.query.stableAsset.pools(poolId)).unwrap();
     console.info(`Total Supply: ${poolInfo.totalSupply.toHuman()}`);
     console.info(`Balances: ${poolInfo.balances.toHuman()}`);
+
+    console.info('Mint Xcm');
+    await includedInBlock(alice, api.tx.stableAsset.mintXcm(poolId, [10000000, 20000000], 0, poolId));
+    poolInfo = (await api.query.stableAssetXcm.pools(poolId)).unwrap();
+    console.info(`Balances: ${JSON.stringify(poolInfo.balances.toHuman())}`);
+
+    console.info('Redeem Proportion Xcm');
+    await includedInBlock(alice, api.tx.stableAssetXcm.redeemProportion(poolId, chainId, poolId, 100000, [0, 0]));
+    poolInfo = (await api.query.stableAssetXcm.pools(poolId)).unwrap();
+    console.info(`Balances: ${JSON.stringify(poolInfo.balances.toHuman())}`);
+
+    console.info('Redeem Single Xcm');
+    await includedInBlock(alice, api.tx.stableAssetXcm.redeemSingle(poolId, chainId, poolId, 100000, 0, 0, 2));
+    poolInfo = (await api.query.stableAssetXcm.pools(poolId)).unwrap();
+    console.info(`Balances: ${JSON.stringify(poolInfo.balances.toHuman())}`);
 }
 
 function includedInBlock(signer, txCall) {

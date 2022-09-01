@@ -62,6 +62,15 @@ Provide `mint` extrinsic with poolID, an array of balance of underlying assets, 
 api.tx.stableAsset.mint(poolId, assetAmounts, minMintAmount)
 ```
 
+### Mint Xcm
+
+Provide `mintXcm` extrinsic with poolID, an array of balance of underlying assets, the minimum amount to mint, and XCM poolID:
+
+```javascript
+api.tx.stableAsset.mintXcm(PoolId, assetAmounts, minMintAmount, xcmPoolId)
+```
+
+
 ### Swap
 
 Provide `swap` extrinsic with poolID, the index of input token, the index of output token, swap amount, and minimum output token amount:
@@ -80,10 +89,10 @@ api.tx.stableAsset.redeemSingle(poolId, amount, minAmounts)
 
 ### Redeem Single
 
-Provide `redeemSingle` extrinsic with poolID, the redeeem amount, redeem token index, and the minimum amount received the underlying asset:
+Provide `redeemSingle` extrinsic with poolID, the redeeem amount, redeem token index, the minimum amount received the underlying asset, and pool asset array length:
 
 ```javascript
-api.tx.stableAsset.redeemSingle(poolId, amount, idx, minAmount)
+api.tx.stableAsset.redeemSingle(poolId, amount, idx, minAmount, assetLength)
 ```
 
 ### Redeem Multi
@@ -92,6 +101,22 @@ Provide `redeemMulti` extrinsic with poolID, an array of amount of underlying as
 
 ```javascript
 api.tx.stableAsset.redeemMulti(poolId, amounts, maxAmount)
+```
+
+### Redeem Proportion Xcm
+
+Provide `redeemProportion` extrinsic with XCM poolID, remote chain ID, poolID, the redeeem amount, and an array of minimum amounts received for each underlying asset:
+
+```javascript
+api.tx.stableAssetXcm.redeemSingle(xcmPoolId, chainId, poolId, amount, minAmounts)
+```
+
+### Redeem Single Xcm
+
+Provide `redeemSingle` extrinsic with XCM poolID, remote chain ID, poolID, the redeeem amount, redeem token index, the minimum amount received the underlying asset, and pool asset array length:
+
+```javascript
+api.tx.stableAssetXcm.redeemSingle(xcmPoolId, chainId, poolId, amount, idx, minAmount, assetLength)
 ```
 
 ### Collect Fees

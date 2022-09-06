@@ -54,6 +54,17 @@ fn create_pool_successful() {
 }
 
 #[test]
+fn create_pool_not_admin() {
+	new_test_ext().execute_with(|| {
+		assert_eq!(StableAsset::pool_count(), 0);
+		assert_noop!(
+			StableAsset::create_pool(Origin::signed(2), 1,),
+			sp_runtime::traits::BadOrigin
+		);
+	});
+}
+
+#[test]
 fn update_limit_successful() {
 	new_test_ext().execute_with(|| {
 		create_pool();
@@ -85,12 +96,61 @@ fn update_limit_successful() {
 }
 
 #[test]
+fn update_balance_successful() {
+	new_test_ext().execute_with(|| {
+		create_pool();
+		assert_ok!(StableAsset::update_balance(Origin::signed(1), 0, 1000, 2, 1000));
+		assert_eq!(
+			StableAsset::pools(0),
+			Some(StableAssetXcmPoolInfo {
+				pool_asset: 0,
+				balances: BTreeMap::from([((1000u32, 2u32), 1000u128)]),
+				limits: BTreeMap::new(),
+			})
+		);
+	});
+}
+
+#[test]
+fn update_balance_pool_not_found() {
+	new_test_ext().execute_with(|| {
+		create_pool();
+		assert_noop!(
+			StableAsset::update_balance(Origin::signed(1), 1, 1000, 2, 1000),
+			Error::<Test>::PoolNotFound
+		);
+	});
+}
+
+#[test]
+fn update_balance_not_admin() {
+	new_test_ext().execute_with(|| {
+		create_pool();
+		assert_noop!(
+			StableAsset::update_balance(Origin::signed(2), 0, 1000, 2, 1000),
+			sp_runtime::traits::BadOrigin
+		);
+	});
+}
+
+#[test]
 fn update_limit_pool_not_found() {
 	new_test_ext().execute_with(|| {
 		create_pool();
 		assert_noop!(
 			StableAsset::update_limit(Origin::signed(1), 1, 1, 2, 100),
 			Error::<Test>::PoolNotFound
+		);
+	});
+}
+
+#[test]
+fn update_limit_not_admin() {
+	new_test_ext().execute_with(|| {
+		create_pool();
+		assert_noop!(
+			StableAsset::update_limit(Origin::signed(2), 0, 1, 2, 100),
+			sp_runtime::traits::BadOrigin
 		);
 	});
 }
@@ -137,6 +197,17 @@ fn mint_pool_not_found() {
 		assert_noop!(
 			StableAsset::mint(Origin::signed(2), 2, 1, 1, 2, 200),
 			Error::<Test>::PoolNotFound
+		);
+	});
+}
+
+#[test]
+fn mint_pool_not_xcm_origin() {
+	new_test_ext().execute_with(|| {
+		create_pool();
+		assert_noop!(
+			StableAsset::mint(Origin::signed(1), 2, 0, 1, 2, 200),
+			sp_runtime::traits::BadOrigin
 		);
 	});
 }

@@ -219,14 +219,32 @@ type Imbalance = <pallet_balances::Pallet<Test> as Currency<AccountId>>::Negativ
 
 impl OnUnbalanced<Imbalance> for EmptyUnbalanceHandler {}
 
-pub struct EnsureStableAsset;
-impl EnsureOrigin<Origin> for EnsureStableAsset {
+pub struct EnsureStableAssetAdmin;
+impl EnsureOrigin<Origin> for EnsureStableAssetAdmin {
 	type Success = AccountId;
 	fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
 		let result: Result<RawOrigin<AccountId>, Origin> = o.into();
 
 		result.and_then(|o| match o {
-			RawOrigin::Signed(id) => Ok(id),
+			RawOrigin::Signed(id) if id == 1 => Ok(id),
+			r => Err(Origin::from(r)),
+		})
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn successful_origin() -> Origin {
+		Origin::from(RawOrigin::Signed(Default::default()))
+	}
+}
+
+pub struct EnsureStableAssetXcm;
+impl EnsureOrigin<Origin> for EnsureStableAssetXcm {
+	type Success = AccountId;
+	fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
+		let result: Result<RawOrigin<AccountId>, Origin> = o.into();
+
+		result.and_then(|o| match o {
+			RawOrigin::Signed(id) if id == 2 => Ok(id),
 			r => Err(Origin::from(r)),
 		})
 	}
@@ -294,8 +312,8 @@ impl stable_asset::Config for Test {
 	type XcmInterface = XcmInterface;
 
 	type WeightInfo = ();
-	type ListingOrigin = EnsureStableAsset;
-	type XcmOrigin = EnsureStableAsset;
+	type ListingOrigin = EnsureStableAssetAdmin;
+	type XcmOrigin = EnsureStableAssetXcm;
 	type EnsurePoolAssetId = EnsurePoolAssetId;
 }
 

@@ -266,39 +266,104 @@ parameter_types! {
 	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct XcmMintFailedCallParameter {
+	pub chain_id: ParachainId,
+	pub pool_id: StableAssetPoolId,
+	pub mint_amount: Balance,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct XcmRedeemProportionCallParameter {
+	pub chain_id: ParachainId,
+	pub pool_id: StableAssetPoolId,
+	pub amount: Balance,
+	pub min_redeem_amounts: Vec<Balance>,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct XcmRedeemSingleCallParameter {
+	pub chain_id: ParachainId,
+	pub pool_id: StableAssetPoolId,
+	pub amount: Balance,
+	pub i: PoolTokenIndex,
+	pub min_redeem_amount: Balance,
+	pub asset_length: u32,
+}
+
+thread_local! {
+	pub static XCM_MINT_FAILED_CALL_PARAMETERS: RefCell<HashMap<AccountId, Option<XcmMintFailedCallParameter>>> = RefCell::new(HashMap::new());
+	pub static XCM_REDEEM_PROPORTION_CALL_PARAMETERS: RefCell<HashMap<AccountId, Option<XcmRedeemProportionCallParameter>>> = RefCell::new(HashMap::new());
+	pub static XCM_REDEEM_SINGLE_CALL_PARAMETERS: RefCell<HashMap<AccountId, Option<XcmRedeemSingleCallParameter>>> = RefCell::new(HashMap::new());
+}
+
 pub struct XcmInterface;
 impl crate::traits::XcmInterface for XcmInterface {
 	type Balance = Balance;
 	type AccountId = AccountId;
 
 	fn send_mint_failed(
-		_account_id: Self::AccountId,
-		_chain_id: ParachainId,
-		_pool_id: StableAssetPoolId,
-		_mint_amount: Self::Balance,
+		account_id: Self::AccountId,
+		chain_id: ParachainId,
+		pool_id: StableAssetPoolId,
+		mint_amount: Self::Balance,
 	) -> DispatchResult {
+		XCM_MINT_FAILED_CALL_PARAMETERS.with(|reference| {
+			reference.borrow_mut().insert(
+				account_id,
+				Some(XcmMintFailedCallParameter {
+					chain_id,
+					pool_id,
+					mint_amount,
+				}),
+			);
+		});
 		Ok(())
 	}
 
 	fn send_redeem_proportion(
-		_account_id: Self::AccountId,
-		_chain_id: ParachainId,
-		_pool_id: StableAssetPoolId,
-		_amount: Self::Balance,
-		_min_redeem_amounts: Vec<Self::Balance>,
+		account_id: Self::AccountId,
+		chain_id: ParachainId,
+		pool_id: StableAssetPoolId,
+		amount: Self::Balance,
+		min_redeem_amounts: Vec<Self::Balance>,
 	) -> DispatchResult {
+		XCM_REDEEM_PROPORTION_CALL_PARAMETERS.with(|reference| {
+			reference.borrow_mut().insert(
+				account_id,
+				Some(XcmRedeemProportionCallParameter {
+					chain_id,
+					pool_id,
+					amount,
+					min_redeem_amounts,
+				}),
+			);
+		});
 		Ok(())
 	}
 
 	fn send_redeem_single(
-		_account_id: Self::AccountId,
-		_chain_id: ParachainId,
-		_pool_id: StableAssetPoolId,
-		_amount: Self::Balance,
-		_i: PoolTokenIndex,
-		_min_redeem_amount: Self::Balance,
-		_asset_length: u32,
+		account_id: Self::AccountId,
+		chain_id: ParachainId,
+		pool_id: StableAssetPoolId,
+		amount: Self::Balance,
+		i: PoolTokenIndex,
+		min_redeem_amount: Self::Balance,
+		asset_length: u32,
 	) -> DispatchResult {
+		XCM_REDEEM_SINGLE_CALL_PARAMETERS.with(|reference| {
+			reference.borrow_mut().insert(
+				account_id,
+				Some(XcmRedeemSingleCallParameter {
+					chain_id,
+					pool_id,
+					amount,
+					i,
+					min_redeem_amount,
+					asset_length,
+				}),
+			);
+		});
 		Ok(())
 	}
 }

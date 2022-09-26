@@ -187,6 +187,9 @@ fn mint_successful() {
 		} else {
 			panic!("Unexpected event");
 		}
+		XCM_MINT_FAILED_CALL_PARAMETERS.with(|map| {
+			assert_eq!(map.borrow().get(&2), None);
+		});
 	});
 }
 
@@ -195,9 +198,19 @@ fn mint_pool_not_found() {
 	new_test_ext().execute_with(|| {
 		create_pool();
 		assert_noop!(
-			StableAsset::mint(Origin::signed(2), 2, 1, 1, 2, 200),
+			StableAsset::mint(Origin::signed(2), 201, 1, 1, 2, 200),
 			Error::<Test>::PoolNotFound
 		);
+		XCM_MINT_FAILED_CALL_PARAMETERS.with(|map| {
+			assert_eq!(
+				*map.borrow().get(&201).unwrap(),
+				Some(XcmMintFailedCallParameter {
+					chain_id: 1,
+					pool_id: 2,
+					mint_amount: 200
+				})
+			);
+		});
 	});
 }
 
@@ -209,6 +222,9 @@ fn mint_pool_not_xcm_origin() {
 			StableAsset::mint(Origin::signed(1), 2, 0, 1, 2, 200),
 			sp_runtime::traits::BadOrigin
 		);
+		XCM_MINT_FAILED_CALL_PARAMETERS.with(|map| {
+			assert_eq!(map.borrow().get(&1), None);
+		});
 	});
 }
 
@@ -218,9 +234,19 @@ fn mint_over_limit() {
 		let _asset_id = create_pool();
 		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100));
 		assert_noop!(
-			StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 200),
+			StableAsset::mint(Origin::signed(2), 202, 0, 1, 2, 200),
 			Error::<Test>::MintOverLimit
 		);
+		XCM_MINT_FAILED_CALL_PARAMETERS.with(|map| {
+			assert_eq!(
+				map.borrow().get(&202).copied().unwrap(),
+				Some(XcmMintFailedCallParameter {
+					chain_id: 1,
+					pool_id: 2,
+					mint_amount: 200
+				})
+			);
+		});
 	});
 }
 
@@ -258,6 +284,17 @@ fn redeem_proportion_successful() {
 		} else {
 			panic!("Unexpected event");
 		}
+		XCM_REDEEM_PROPORTION_CALL_PARAMETERS.with(|map| {
+			assert_eq!(
+				*map.borrow().get(&2).unwrap(),
+				Some(XcmRedeemProportionCallParameter {
+					chain_id: 1,
+					pool_id: 2,
+					amount: 10000,
+					min_redeem_amounts: vec![0u128, 0u128]
+				})
+			);
+		});
 	});
 }
 
@@ -266,9 +303,12 @@ fn redeem_proportion_pool_not_found() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(2);
 		assert_noop!(
-			StableAsset::redeem_proportion(Origin::signed(2), 0, 1, 2, 10000, vec![0u128, 0u128]),
+			StableAsset::redeem_proportion(Origin::signed(20), 0, 1, 2, 10000, vec![0u128, 0u128]),
 			Error::<Test>::PoolNotFound
 		);
+		XCM_REDEEM_PROPORTION_CALL_PARAMETERS.with(|map| {
+			assert_eq!(map.borrow().get(&20), None);
+		});
 	});
 }
 
@@ -280,9 +320,12 @@ fn redeem_proportion_over_limit() {
 		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100000));
 		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 20000));
 		assert_noop!(
-			StableAsset::redeem_proportion(Origin::signed(2), 0, 1, 2, 10000000000u128, vec![0u128, 0u128]),
+			StableAsset::redeem_proportion(Origin::signed(30), 0, 1, 2, 10000000000u128, vec![0u128, 0u128]),
 			Error::<Test>::RedeemOverLimit
 		);
+		XCM_REDEEM_PROPORTION_CALL_PARAMETERS.with(|map| {
+			assert_eq!(map.borrow().get(&30), None);
+		});
 	});
 }
 
@@ -324,6 +367,19 @@ fn redeem_single_successful() {
 		} else {
 			panic!("Unexpected event");
 		}
+		XCM_REDEEM_SINGLE_CALL_PARAMETERS.with(|map| {
+			assert_eq!(
+				*map.borrow().get(&2).unwrap(),
+				Some(XcmRedeemSingleCallParameter {
+					chain_id: 1,
+					pool_id: 2,
+					amount: 10000,
+					i: 1,
+					min_redeem_amount: 0,
+					asset_length: 2
+				})
+			);
+		});
 	});
 }
 
@@ -331,9 +387,12 @@ fn redeem_single_successful() {
 fn redeem_single_pool_not_found() {
 	new_test_ext().execute_with(|| {
 		assert_noop!(
-			StableAsset::redeem_single(Origin::signed(2), 0, 1, 2, 10000, 1, 0u128, 2),
+			StableAsset::redeem_single(Origin::signed(20), 0, 1, 2, 10000, 1, 0u128, 2),
 			Error::<Test>::PoolNotFound
 		);
+		XCM_REDEEM_SINGLE_CALL_PARAMETERS.with(|map| {
+			assert_eq!(map.borrow().get(&20), None);
+		});
 	});
 }
 
@@ -345,8 +404,11 @@ fn redeem_single_over_limit() {
 		assert_ok!(StableAsset::update_limit(Origin::signed(1), 0, 1, 2, 100000));
 		assert_ok!(StableAsset::mint(Origin::signed(2), 2, 0, 1, 2, 20000));
 		assert_noop!(
-			StableAsset::redeem_single(Origin::signed(2), 0, 1, 2, 1000000000000u128, 1, 0u128, 2),
+			StableAsset::redeem_single(Origin::signed(30), 0, 1, 2, 1000000000000u128, 1, 0u128, 2),
 			Error::<Test>::RedeemOverLimit
 		);
+		XCM_REDEEM_SINGLE_CALL_PARAMETERS.with(|map| {
+			assert_eq!(map.borrow().get(&30), None);
+		});
 	});
 }

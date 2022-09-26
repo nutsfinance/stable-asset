@@ -1078,6 +1078,17 @@ fn mint_xcm_successful() {
 				assert_eq!(TestAssets::balance(pool_asset, &swap_id) > 0, true);
 			}
 		}
+		XCM_MINT_CALL_PARAMETERS.with(|map| {
+			assert_eq!(
+				*map.borrow().get(&1).unwrap(),
+				Some(XcmMintCallParameter {
+					remote_pool_id: 1,
+					chain_id: 100,
+					local_pool_id: 0,
+					mint_amount: 299606896309149793u128
+				})
+			);
+		});
 	});
 }
 

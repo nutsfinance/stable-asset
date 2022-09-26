@@ -249,18 +249,41 @@ parameter_types! {
 	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct XcmMintCallParameter {
+	pub remote_pool_id: StableAssetXcmPoolId,
+	pub chain_id: ParachainId,
+	pub local_pool_id: StableAssetPoolId,
+	pub mint_amount: Balance,
+}
+
+thread_local! {
+	pub static XCM_MINT_CALL_PARAMETERS: RefCell<HashMap<AccountId, Option<XcmMintCallParameter>>> = RefCell::new(HashMap::new());
+}
+
 pub struct XcmInterface;
 impl crate::traits::XcmInterface for XcmInterface {
 	type Balance = Balance;
 	type AccountId = AccountId;
 
 	fn send_mint_call_to_xcm(
-		_account_id: Self::AccountId,
-		_remote_pool_id: StableAssetXcmPoolId,
-		_chain_id: ParachainId,
-		_local_pool_id: StableAssetPoolId,
-		_mint_amount: Self::Balance,
+		account_id: Self::AccountId,
+		remote_pool_id: StableAssetXcmPoolId,
+		chain_id: ParachainId,
+		local_pool_id: StableAssetPoolId,
+		mint_amount: Self::Balance,
 	) -> DispatchResult {
+		XCM_MINT_CALL_PARAMETERS.with(|reference| {
+			reference.borrow_mut().insert(
+				account_id,
+				Some(XcmMintCallParameter {
+					remote_pool_id,
+					chain_id,
+					local_pool_id,
+					mint_amount,
+				}),
+			);
+		});
 		Ok(())
 	}
 }

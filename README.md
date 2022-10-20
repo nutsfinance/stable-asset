@@ -1,4 +1,5 @@
 # NUTS Stable Asset Pallet
+![Web3 Grant](https://user-images.githubusercontent.com/2569558/196849982-0f22a2ff-538a-4249-a789-f56b04e09f0f.png)
 
 ## Overview
 

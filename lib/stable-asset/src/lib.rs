@@ -312,7 +312,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		type AssetId: Parameter + Ord + Copy;
 		type Balance: Parameter + Codec + Copy + Ord + From<Self::AtLeast64BitUnsigned> + Zero;
@@ -349,7 +349,7 @@ pub mod pallet {
 		type EnsurePoolAssetId: ValidateAssetId<Self::AssetId>;
 
 		/// The origin which may create pool or modify pool.
-		type ListingOrigin: EnsureOrigin<Self::Origin>;
+		type ListingOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 	}
 
 	#[pallet::pallet]

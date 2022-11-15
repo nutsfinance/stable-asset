@@ -50,61 +50,61 @@ use crate::WeightInfo;
 #[allow(clippy::unnecessary_cast)]
 impl WeightInfo for () {
 	fn create_pool() -> Weight {
-		(33_115_000 as Weight)
-			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(33_115_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(3 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	fn modify_a() -> Weight {
-		(21_186_000 as Weight)
-			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(21_186_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(1 as u64))
+			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	fn modify_fees() -> Weight {
-		(21_186_000 as Weight)
-			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(21_186_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(1 as u64))
+			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	fn modify_recipients() -> Weight {
-		(21_186_000 as Weight)
-			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(21_186_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(1 as u64))
+			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	fn mint(u: u32) -> Weight {
-		(85_694_000 as Weight) // Standard Error: 187_000
-			.saturating_add((46_172_000 as Weight).saturating_mul(u as Weight))
-			.saturating_add(RocksDbWeight::get().reads(6 as Weight))
-			.saturating_add(RocksDbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
-			.saturating_add(RocksDbWeight::get().writes(6 as Weight))
-			.saturating_add(RocksDbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
+		Weight::from_ref_time(85_694_000 as u64)
+			.saturating_add(Weight::from_ref_time(46_172_000 as u64).saturating_mul(u as u64))
+			.saturating_add(RocksDbWeight::get().reads(6 as u64))
+			.saturating_add(RocksDbWeight::get().reads((3 as u64).saturating_mul(u as u64)))
+			.saturating_add(RocksDbWeight::get().writes(6 as u64))
+			.saturating_add(RocksDbWeight::get().writes((3 as u64).saturating_mul(u as u64)))
 	}
 	fn swap(u: u32) -> Weight {
-		(124_402_000 as Weight) // Standard Error: 72_000
-			.saturating_add((8_138_000 as Weight).saturating_mul(u as Weight))
-			.saturating_add(RocksDbWeight::get().reads(7 as Weight))
-			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(u as Weight)))
-			.saturating_add(RocksDbWeight::get().writes(9 as Weight))
+		Weight::from_ref_time(124_402_000 as u64)
+			.saturating_add(Weight::from_ref_time(8_138_000 as u64).saturating_mul(u as u64))
+			.saturating_add(RocksDbWeight::get().reads(7 as u64))
+			.saturating_add(RocksDbWeight::get().reads((1 as u64).saturating_mul(u as u64)))
+			.saturating_add(RocksDbWeight::get().writes(9 as u64))
 	}
 	fn redeem_proportion(u: u32) -> Weight {
-		(107_494_000 as Weight) // Standard Error: 164_000
-			.saturating_add((43_376_000 as Weight).saturating_mul(u as Weight))
-			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
-			.saturating_add(RocksDbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
-			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
-			.saturating_add(RocksDbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
+		Weight::from_ref_time(107_494_000 as u64)
+			.saturating_add(Weight::from_ref_time(43_376_000 as u64).saturating_mul(u as u64))
+			.saturating_add(RocksDbWeight::get().reads(4 as u64))
+			.saturating_add(RocksDbWeight::get().reads((3 as u64).saturating_mul(u as u64)))
+			.saturating_add(RocksDbWeight::get().writes(4 as u64))
+			.saturating_add(RocksDbWeight::get().writes((3 as u64).saturating_mul(u as u64)))
 	}
 	fn redeem_single(u: u32) -> Weight {
-		(114_847_000 as Weight) // Standard Error: 882_000
-			.saturating_add((14_613_000 as Weight).saturating_mul(u as Weight))
-			.saturating_add(RocksDbWeight::get().reads(6 as Weight))
-			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(u as Weight)))
-			.saturating_add(RocksDbWeight::get().writes(7 as Weight))
+		Weight::from_ref_time(114_847_000 as u64)
+			.saturating_add(Weight::from_ref_time(14_613_000 as u64).saturating_mul(u as u64))
+			.saturating_add(RocksDbWeight::get().reads(6 as u64))
+			.saturating_add(RocksDbWeight::get().reads((1 as u64).saturating_mul(u as u64)))
+			.saturating_add(RocksDbWeight::get().writes(7 as u64))
 	}
 	fn redeem_multi(u: u32) -> Weight {
-		(86_888_000 as Weight) // Standard Error: 152_000
-			.saturating_add((43_556_000 as Weight).saturating_mul(u as Weight))
-			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
-			.saturating_add(RocksDbWeight::get().reads((3 as Weight).saturating_mul(u as Weight)))
-			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
-			.saturating_add(RocksDbWeight::get().writes((3 as Weight).saturating_mul(u as Weight)))
+		Weight::from_ref_time(86_888_000 as u64)
+			.saturating_add(Weight::from_ref_time(43_556_000 as u64).saturating_mul(u as u64))
+			.saturating_add(RocksDbWeight::get().reads(4 as u64))
+			.saturating_add(RocksDbWeight::get().reads((3 as u64).saturating_mul(u as u64)))
+			.saturating_add(RocksDbWeight::get().writes(4 as u64))
+			.saturating_add(RocksDbWeight::get().writes((3 as u64).saturating_mul(u as u64)))
 	}
 }

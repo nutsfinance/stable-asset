@@ -55,8 +55,8 @@ impl frame_system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;
@@ -64,7 +64,7 @@ impl frame_system::Config for Test {
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = ConstU64<250>;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -81,7 +81,7 @@ impl pallet_balances::Config for Test {
 	type MaxLocks = ();
 	type Balance = Balance;
 	type DustRemoval = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ConstU128<1>;
 	type AccountStore = System;
 	type WeightInfo = ();
@@ -220,20 +220,20 @@ type Imbalance = <pallet_balances::Pallet<Test> as Currency<AccountId>>::Negativ
 impl OnUnbalanced<Imbalance> for EmptyUnbalanceHandler {}
 
 pub struct EnsureStableAsset;
-impl EnsureOrigin<Origin> for EnsureStableAsset {
+impl EnsureOrigin<RuntimeOrigin> for EnsureStableAsset {
 	type Success = AccountId;
-	fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
-		let result: Result<RawOrigin<AccountId>, Origin> = o.into();
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		let result: Result<RawOrigin<AccountId>, RuntimeOrigin> = o.into();
 
 		result.and_then(|o| match o {
 			RawOrigin::Signed(id) => Ok(id),
-			r => Err(Origin::from(r)),
+			r => Err(RuntimeOrigin::from(r)),
 		})
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	fn successful_origin() -> Origin {
-		Origin::from(RawOrigin::Signed(Default::default()))
+	fn successful_origin() -> RuntimeOrigin {
+		RuntimeOrigin::from(RawOrigin::Signed(Default::default()))
 	}
 }
 
@@ -249,7 +249,7 @@ parameter_types! {
 }
 
 impl stable_asset::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type AssetId = i64;
 	type Balance = Balance;
 	type Assets = TestAssets;

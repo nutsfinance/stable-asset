@@ -23,10 +23,10 @@ use frame_support::traits::fungibles::{Inspect, Mutate};
 
 pub const BALANCE_OFF: u128 = 1;
 
-fn last_event() -> Event {
+fn last_event() -> RuntimeEvent {
 	frame_system::pallet::Pallet::<Test>::events()
 		.pop()
-		.expect("Event expected")
+		.expect("RuntimeEvent expected")
 		.event
 }
 
@@ -38,7 +38,7 @@ fn create_pool() -> (i64, i64, i64, u64) {
 	assert_ok!(TestAssets::mint_into(coin0, &1, amount));
 	assert_ok!(TestAssets::mint_into(coin1, &1, amount));
 	assert_ok!(StableAsset::create_pool(
-		Origin::signed(1),
+		RuntimeOrigin::signed(1),
 		pool_asset,
 		vec![coin0, coin1],
 		vec![10000000000u128, 10000000000u128],
@@ -58,7 +58,7 @@ fn create_pool_successful() {
 	new_test_ext().execute_with(|| {
 		assert_eq!(StableAsset::pool_count(), 0);
 		assert_ok!(StableAsset::create_pool(
-			Origin::signed(1),
+			RuntimeOrigin::signed(1),
 			1,
 			vec![1, 2],
 			vec![1u128, 1u128],
@@ -99,7 +99,7 @@ fn create_pool_precisions_mismatch() {
 	new_test_ext().execute_with(|| {
 		assert_noop!(
 			StableAsset::create_pool(
-				Origin::signed(1),
+				RuntimeOrigin::signed(1),
 				1,
 				vec![1, 2],
 				vec![1u128, 1u128, 1u128],
@@ -121,7 +121,7 @@ fn create_pool_asset_not_enough() {
 	new_test_ext().execute_with(|| {
 		assert_noop!(
 			StableAsset::create_pool(
-				Origin::signed(1),
+				RuntimeOrigin::signed(1),
 				1,
 				vec![1],
 				vec![1u128, 1u128, 1u128],
@@ -144,7 +144,7 @@ fn modify_a_successful() {
 		let pool_tokens = create_pool();
 		match pool_tokens {
 			(coin0, coin1, pool_asset, swap_id) => {
-				assert_ok!(StableAsset::modify_a(Origin::signed(1), 0, 100, 100));
+				assert_ok!(StableAsset::modify_a(RuntimeOrigin::signed(1), 0, 100, 100));
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(StableAssetPoolInfo {
@@ -178,7 +178,7 @@ fn modify_a_argument_error_failed() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				assert_noop!(
-					StableAsset::modify_a(Origin::signed(1), 0, 100, 0),
+					StableAsset::modify_a(RuntimeOrigin::signed(1), 0, 100, 0),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -193,7 +193,7 @@ fn modify_a_pool_not_found() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				assert_noop!(
-					StableAsset::modify_a(Origin::signed(1), 1, 100, 1000),
+					StableAsset::modify_a(RuntimeOrigin::signed(1), 1, 100, 1000),
 					Error::<Test>::PoolNotFound
 				);
 			}
@@ -208,7 +208,7 @@ fn mint_successful_equal_amounts() {
 		match pool_tokens {
 			(coin0, coin1, pool_asset, swap_id) => {
 				let amounts = vec![10000000u128, 10000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(StableAssetPoolInfo {
@@ -253,7 +253,7 @@ fn mint_successful_different_amounts() {
 		match pool_tokens {
 			(coin0, coin1, pool_asset, swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(StableAssetPoolInfo {
@@ -285,7 +285,7 @@ fn mint_successful_different_amounts() {
 					299606896309149793u128 - BALANCE_OFF
 				);
 				assert_eq!(TestAssets::balance(pool_asset, &2), 299906803112262u128 - BALANCE_OFF);
-				if let Event::StableAsset(crate::pallet::Event::Minted {
+				if let RuntimeEvent::StableAsset(crate::pallet::Event::Minted {
 					minter: _,
 					pool_id: _,
 					output_amount: mint_amount,
@@ -316,7 +316,7 @@ fn mint_failed_no_pool() {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_noop!(
-					StableAsset::mint(Origin::signed(1), 3, amounts, 0),
+					StableAsset::mint(RuntimeOrigin::signed(1), 3, amounts, 0),
 					Error::<Test>::PoolNotFound
 				);
 			}
@@ -333,7 +333,7 @@ fn mint_failed_too_many_amounts() {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128, 20000000u128];
 				assert_noop!(
-					StableAsset::mint(Origin::signed(1), 0, amounts, 0),
+					StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0),
 					Error::<Test>::ArgumentsMismatch
 				);
 			}
@@ -350,7 +350,7 @@ fn mint_failed_zero_amount() {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![0u128, 20000000u128];
 				assert_noop!(
-					StableAsset::mint(Origin::signed(1), 0, amounts, 0),
+					StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -367,7 +367,7 @@ fn mint_failed_under_min() {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
 				assert_noop!(
-					StableAsset::mint(Origin::signed(1), 0, amounts, 2000000000000000000000000u128),
+					StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 2000000000000000000000000u128),
 					Error::<Test>::MintUnderMin
 				);
 			}
@@ -385,7 +385,7 @@ fn mint_failed_overflow() {
 				assert_ok!(TestAssets::mint_into(coin0, &1, 10000000000u128));
 				assert_ok!(TestAssets::mint_into(coin1, &1, 20000000000u128));
 				let amounts = vec![10000000000u128, 20000000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0u128),);
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0u128),);
 			}
 		}
 	});
@@ -399,8 +399,8 @@ fn swap_successful() {
 		match pool_tokens {
 			(coin0, coin1, pool_asset, swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
-				assert_ok!(StableAsset::swap(Origin::signed(1), 0, 0, 1, 5000000u128, 0, 2));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::swap(RuntimeOrigin::signed(1), 0, 0, 1, 5000000u128, 0, 2));
 				assert_eq!(
 					StableAsset::pools(0),
 					Some(StableAssetPoolInfo {
@@ -426,7 +426,7 @@ fn swap_successful() {
 				assert_eq!(TestAssets::balance(coin1, &1), 84999301u128 - BALANCE_OFF);
 				assert_eq!(TestAssets::balance(coin0, &swap_id), 15000000u128 - BALANCE_OFF);
 				assert_eq!(TestAssets::balance(coin1, &swap_id), 15000699u128 - BALANCE_OFF);
-				if let Event::StableAsset(crate::pallet::Event::TokenSwapped {
+				if let RuntimeEvent::StableAsset(crate::pallet::Event::TokenSwapped {
 					swapper: _,
 					pool_id: _,
 					input_asset: _,
@@ -457,9 +457,9 @@ fn swap_failed_same_token() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 1, 1, 5000000u128, 0, 2),
+					StableAsset::swap(RuntimeOrigin::signed(1), 0, 1, 1, 5000000u128, 0, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -475,9 +475,9 @@ fn swap_failed_no_pool() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 3, 0, 1, 5000000u128, 0, 2),
+					StableAsset::swap(RuntimeOrigin::signed(1), 3, 0, 1, 5000000u128, 0, 2),
 					Error::<Test>::PoolNotFound
 				);
 			}
@@ -493,9 +493,9 @@ fn swap_failed_invalid_first_token() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 2, 1, 5000000u128, 0, 2),
+					StableAsset::swap(RuntimeOrigin::signed(1), 0, 2, 1, 5000000u128, 0, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -511,9 +511,9 @@ fn swap_failed_invalid_second_token() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 0, 2, 5000000u128, 0, 2),
+					StableAsset::swap(RuntimeOrigin::signed(1), 0, 0, 2, 5000000u128, 0, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -529,9 +529,9 @@ fn swap_failed_invalid_amount() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 0, 1, 0u128, 0, 2),
+					StableAsset::swap(RuntimeOrigin::signed(1), 0, 0, 1, 0u128, 0, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -547,9 +547,9 @@ fn swap_failed_under_min() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 0, 1, 5000000u128, 50000000000000000u128, 2),
+					StableAsset::swap(RuntimeOrigin::signed(1), 0, 0, 1, 5000000u128, 50000000000000000u128, 2),
 					Error::<Test>::SwapUnderMin
 				);
 			}
@@ -565,9 +565,9 @@ fn swap_failed_under_overflow() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::swap(Origin::signed(1), 0, 0, 1, 500000000u128, 0u128, 2),
+					StableAsset::swap(RuntimeOrigin::signed(1), 0, 0, 1, 500000000u128, 0u128, 2),
 					DispatchError::Other("Overflow")
 				);
 			}
@@ -583,9 +583,9 @@ fn redeem_proportion_successful() {
 		match pool_tokens {
 			(coin0, coin1, pool_asset, swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_ok!(StableAsset::redeem_proportion(
-					Origin::signed(1),
+					RuntimeOrigin::signed(1),
 					0,
 					100000000000000000u128,
 					vec![0u128, 0u128]
@@ -620,7 +620,7 @@ fn redeem_proportion_successful() {
 					199606896309149793u128 - BALANCE_OFF
 				);
 				assert_eq!(TestAssets::balance(pool_asset, &2), 799916706598014u128 - BALANCE_OFF);
-				if let Event::StableAsset(crate::pallet::Event::RedeemedProportion {
+				if let RuntimeEvent::StableAsset(crate::pallet::Event::RedeemedProportion {
 					redeemer: _,
 					pool_id: _,
 					input_amount: amount,
@@ -651,9 +651,9 @@ fn redeem_proportion_failed_zero_amount() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_proportion(Origin::signed(1), 0, 0u128, vec![0u128, 0u128]),
+					StableAsset::redeem_proportion(RuntimeOrigin::signed(1), 0, 0u128, vec![0u128, 0u128]),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -669,10 +669,10 @@ fn redeem_proportion_failed_limits_mismatch() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
 					StableAsset::redeem_proportion(
-						Origin::signed(1),
+						RuntimeOrigin::signed(1),
 						0,
 						100000000000000000u128,
 						vec![0u128, 0u128, 0u128]
@@ -692,9 +692,14 @@ fn redeem_proportion_failed_overflow() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_proportion(Origin::signed(1), 0, 10000000000000000000u128, vec![0u128, 0u128]),
+					StableAsset::redeem_proportion(
+						RuntimeOrigin::signed(1),
+						0,
+						10000000000000000000u128,
+						vec![0u128, 0u128]
+					),
 					Error::<Test>::Math
 				);
 			}
@@ -710,10 +715,10 @@ fn redeem_proportion_failed_limits_breached() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
 					StableAsset::redeem_proportion(
-						Origin::signed(1),
+						RuntimeOrigin::signed(1),
 						0,
 						100000000000000000u128,
 						vec![100000000000000000u128, 0u128]
@@ -733,9 +738,14 @@ fn redeem_proportion_failed_no_pool() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_proportion(Origin::signed(1), 3, 100000000000000000u128, vec![0u128, 0u128]),
+					StableAsset::redeem_proportion(
+						RuntimeOrigin::signed(1),
+						3,
+						100000000000000000u128,
+						vec![0u128, 0u128]
+					),
 					Error::<Test>::PoolNotFound
 				);
 			}
@@ -751,9 +761,9 @@ fn redeem_single_successful() {
 		match pool_tokens {
 			(coin0, coin1, pool_asset, swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_ok!(StableAsset::redeem_single(
-					Origin::signed(1),
+					RuntimeOrigin::signed(1),
 					0,
 					100000000000000000u128,
 					0,
@@ -790,7 +800,7 @@ fn redeem_single_successful() {
 					199606896309149793u128 - BALANCE_OFF
 				);
 				assert_eq!(TestAssets::balance(pool_asset, &2), 799922619246391u128);
-				if let Event::StableAsset(crate::pallet::Event::RedeemedSingle {
+				if let RuntimeEvent::StableAsset(crate::pallet::Event::RedeemedSingle {
 					redeemer: _,
 					pool_id: _,
 					input_amount,
@@ -822,9 +832,9 @@ fn redeem_single_failed_zero_amount() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 0, 0u128, 0, 0u128, 2),
+					StableAsset::redeem_single(RuntimeOrigin::signed(1), 0, 0u128, 0, 0u128, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -840,9 +850,9 @@ fn redeem_single_failed_overflow() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 0, 1000000000000000000u128, 0, 0u128, 2),
+					StableAsset::redeem_single(RuntimeOrigin::signed(1), 0, 1000000000000000000u128, 0, 0u128, 2),
 					Error::<Test>::Math
 				);
 			}
@@ -858,10 +868,10 @@ fn redeem_single_failed_under_min() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
 					StableAsset::redeem_single(
-						Origin::signed(1),
+						RuntimeOrigin::signed(1),
 						0,
 						100000000000000000u128,
 						0,
@@ -883,9 +893,9 @@ fn redeem_single_failed_invalid_token() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 0, 100000000000000000u128, 3, 0u128, 2),
+					StableAsset::redeem_single(RuntimeOrigin::signed(1), 0, 100000000000000000u128, 3, 0u128, 2),
 					Error::<Test>::ArgumentsError
 				);
 			}
@@ -901,9 +911,9 @@ fn redeem_single_failed_no_pool() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_single(Origin::signed(1), 3, 100000000000000000u128, 3, 0u128, 2),
+					StableAsset::redeem_single(RuntimeOrigin::signed(1), 3, 100000000000000000u128, 3, 0u128, 2),
 					Error::<Test>::PoolNotFound
 				);
 			}
@@ -919,9 +929,9 @@ fn redeem_multi_successful() {
 		match pool_tokens {
 			(coin0, coin1, pool_asset, swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_ok!(StableAsset::redeem_multi(
-					Origin::signed(1),
+					RuntimeOrigin::signed(1),
 					0,
 					vec![5000000u128, 5000000u128],
 					1100000000000000000u128,
@@ -953,7 +963,7 @@ fn redeem_multi_successful() {
 				assert_eq!(TestAssets::balance(coin1, &swap_id), 15000000u128 - BALANCE_OFF);
 				assert_eq!(TestAssets::balance(pool_asset, &1), 199031790317593892u128);
 				assert_eq!(TestAssets::balance(pool_asset, &2), 802782333070040u128);
-				if let Event::StableAsset(crate::pallet::Event::RedeemedMulti {
+				if let RuntimeEvent::StableAsset(crate::pallet::Event::RedeemedMulti {
 					redeemer: _,
 					pool_id: _,
 					output_amounts: amounts,
@@ -984,10 +994,10 @@ fn redeem_multi_failed_not_enough_assets() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
 					StableAsset::redeem_multi(
-						Origin::signed(1),
+						RuntimeOrigin::signed(1),
 						0,
 						vec![1000000000u128, 1000000000u128],
 						1100000000000000000u128,
@@ -1007,9 +1017,9 @@ fn redeem_multi_failed_over_max() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_multi(Origin::signed(1), 0, vec![5000000u128, 5000000u128], 110000u128,),
+					StableAsset::redeem_multi(RuntimeOrigin::signed(1), 0, vec![5000000u128, 5000000u128], 110000u128,),
 					Error::<Test>::RedeemOverMax
 				);
 			}
@@ -1025,9 +1035,9 @@ fn redeem_multi_failed_no_pool() {
 		match pool_tokens {
 			(_coin0, _coin1, _pool_asset, _swap_id) => {
 				let amounts = vec![10000000u128, 20000000u128];
-				assert_ok!(StableAsset::mint(Origin::signed(1), 0, amounts, 0));
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
 				assert_noop!(
-					StableAsset::redeem_multi(Origin::signed(1), 1, vec![5000000u128, 5000000u128], 110000u128,),
+					StableAsset::redeem_multi(RuntimeOrigin::signed(1), 1, vec![5000000u128, 5000000u128], 110000u128,),
 					Error::<Test>::PoolNotFound
 				);
 			}
@@ -1104,7 +1114,7 @@ fn modify_fees_successful() {
 		match pool_tokens {
 			(coin0, coin1, pool_asset, swap_id) => {
 				assert_ok!(StableAsset::modify_fees(
-					Origin::signed(1),
+					RuntimeOrigin::signed(1),
 					0,
 					Some(100),
 					Some(200),

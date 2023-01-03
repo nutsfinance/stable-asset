@@ -547,6 +547,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		#[pallet::call_index(0)]
 		#[pallet::weight(T::WeightInfo::create_pool())]
 		#[transactional]
 		pub fn create_pool(
@@ -578,6 +579,7 @@ pub mod pallet {
 			)
 		}
 
+		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::mint(amounts.len() as u32))]
 		#[transactional]
 		pub fn mint(
@@ -590,6 +592,7 @@ pub mod pallet {
 			<Self as StableAsset>::mint(&who, pool_id, amounts, min_mint_amount)
 		}
 
+		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::swap(*asset_length))]
 		#[transactional]
 		pub fn swap(
@@ -606,6 +609,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(3)]
 		#[pallet::weight(T::WeightInfo::redeem_proportion(min_redeem_amounts.len() as u32))]
 		#[transactional]
 		pub fn redeem_proportion(
@@ -618,6 +622,7 @@ pub mod pallet {
 			<Self as StableAsset>::redeem_proportion(&who, pool_id, amount, min_redeem_amounts)
 		}
 
+		#[pallet::call_index(4)]
 		#[pallet::weight(T::WeightInfo::redeem_single(*asset_length))]
 		#[transactional]
 		pub fn redeem_single(
@@ -633,6 +638,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[pallet::call_index(5)]
 		#[pallet::weight(T::WeightInfo::redeem_multi(amounts.len() as u32))]
 		#[transactional]
 		pub fn redeem_multi(
@@ -645,6 +651,7 @@ pub mod pallet {
 			<Self as StableAsset>::redeem_multi(&who, pool_id, amounts, max_redeem_amount)
 		}
 
+		#[pallet::call_index(6)]
 		#[pallet::weight(T::WeightInfo::modify_a())]
 		#[transactional]
 		pub fn modify_a(
@@ -657,6 +664,7 @@ pub mod pallet {
 			<Self as StableAsset>::modify_a(pool_id, a, future_a_block)
 		}
 
+		#[pallet::call_index(7)]
 		#[pallet::weight(T::WeightInfo::modify_fees())]
 		#[transactional]
 		pub fn modify_fees(
@@ -688,6 +696,7 @@ pub mod pallet {
 			})
 		}
 
+		#[pallet::call_index(8)]
 		#[pallet::weight(T::WeightInfo::modify_recipients())]
 		#[transactional]
 		pub fn modify_recipients(

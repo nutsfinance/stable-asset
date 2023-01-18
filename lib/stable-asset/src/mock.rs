@@ -197,6 +197,10 @@ impl Inspect<AccountId> for TestAssets {
 	fn can_withdraw(_asset: AssetId, _who: &AccountId, _amount: Balance) -> WithdrawConsequence<Balance> {
 		todo!()
 	}
+
+	fn asset_exists(_asset: AssetId) -> bool {
+		todo!()
+	}
 }
 
 impl Transfer<AccountId> for TestAssets {

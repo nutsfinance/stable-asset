@@ -274,7 +274,7 @@ impl EnsureOrigin<Origin> for EnsureStableAsset {
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	fn successful_origin() -> Origin {
+	fn try_successful_origin() -> Origin {
 		let module_id = StableAssetPalletId::get();
 		let account_id: AccountId = module_id.into_account();
 		Origin::from(RawOrigin::Signed(account_id))

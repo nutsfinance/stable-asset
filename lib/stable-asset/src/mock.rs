@@ -236,7 +236,7 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureStableAsset {
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	fn successful_origin() -> RuntimeOrigin {
+	fn try_successful_origin() -> RuntimeOrigin {
 		RuntimeOrigin::from(RawOrigin::Signed(Default::default()))
 	}
 }

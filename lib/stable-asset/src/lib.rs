@@ -1235,7 +1235,7 @@ impl<T: Config> Pallet<T> {
 				.ok_or(Error::<T>::Math)?;
 		}
 		let new_d: T::AtLeast64BitUnsigned = Self::get_d(&balances, a).ok_or(Error::<T>::Math)?;
-		let old_d_div_100: T::AtLeast64BitUnsigned = new_d.checked_div(&100u128.into()).ok_or(Error::<T>::Math)?;
+		let old_d_div_100: T::AtLeast64BitUnsigned = old_d.checked_div(&100u128.into()).ok_or(Error::<T>::Math)?;
 		let old_d_margin: T::AtLeast64BitUnsigned = old_d.checked_sub(&old_d_div_100).ok_or(Error::<T>::Math)?;
 
 		if new_d > old_d {

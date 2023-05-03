@@ -50,58 +50,58 @@ use crate::WeightInfo;
 #[allow(clippy::unnecessary_cast)]
 impl WeightInfo for () {
 	fn create_pool() -> Weight {
-		Weight::from_ref_time(33_115_000 as u64)
+		Weight::from_parts(33_115_000 as u64, 0)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	fn modify_a() -> Weight {
-		Weight::from_ref_time(21_186_000 as u64)
+		Weight::from_parts(21_186_000 as u64, 0)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	fn modify_fees() -> Weight {
-		Weight::from_ref_time(21_186_000 as u64)
+		Weight::from_parts(21_186_000 as u64, 0)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	fn modify_recipients() -> Weight {
-		Weight::from_ref_time(21_186_000 as u64)
+		Weight::from_parts(21_186_000 as u64, 0)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	fn mint(u: u32) -> Weight {
-		Weight::from_ref_time(85_694_000 as u64)
-			.saturating_add(Weight::from_ref_time(46_172_000 as u64).saturating_mul(u as u64))
+		Weight::from_parts(85_694_000 as u64, 0)
+			.saturating_add(Weight::from_parts(46_172_000 as u64, 0).saturating_mul(u as u64))
 			.saturating_add(RocksDbWeight::get().reads(6 as u64))
 			.saturating_add(RocksDbWeight::get().reads((3 as u64).saturating_mul(u as u64)))
 			.saturating_add(RocksDbWeight::get().writes(6 as u64))
 			.saturating_add(RocksDbWeight::get().writes((3 as u64).saturating_mul(u as u64)))
 	}
 	fn swap(u: u32) -> Weight {
-		Weight::from_ref_time(124_402_000 as u64)
-			.saturating_add(Weight::from_ref_time(8_138_000 as u64).saturating_mul(u as u64))
+		Weight::from_parts(124_402_000 as u64, 0)
+			.saturating_add(Weight::from_parts(8_138_000 as u64, 0).saturating_mul(u as u64))
 			.saturating_add(RocksDbWeight::get().reads(7 as u64))
 			.saturating_add(RocksDbWeight::get().reads((1 as u64).saturating_mul(u as u64)))
 			.saturating_add(RocksDbWeight::get().writes(9 as u64))
 	}
 	fn redeem_proportion(u: u32) -> Weight {
-		Weight::from_ref_time(107_494_000 as u64)
-			.saturating_add(Weight::from_ref_time(43_376_000 as u64).saturating_mul(u as u64))
+		Weight::from_parts(107_494_000 as u64, 0)
+			.saturating_add(Weight::from_parts(43_376_000 as u64, 0).saturating_mul(u as u64))
 			.saturating_add(RocksDbWeight::get().reads(4 as u64))
 			.saturating_add(RocksDbWeight::get().reads((3 as u64).saturating_mul(u as u64)))
 			.saturating_add(RocksDbWeight::get().writes(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes((3 as u64).saturating_mul(u as u64)))
 	}
 	fn redeem_single(u: u32) -> Weight {
-		Weight::from_ref_time(114_847_000 as u64)
-			.saturating_add(Weight::from_ref_time(14_613_000 as u64).saturating_mul(u as u64))
+		Weight::from_parts(114_847_000 as u64, 0)
+			.saturating_add(Weight::from_parts(14_613_000 as u64, 0).saturating_mul(u as u64))
 			.saturating_add(RocksDbWeight::get().reads(6 as u64))
 			.saturating_add(RocksDbWeight::get().reads((1 as u64).saturating_mul(u as u64)))
 			.saturating_add(RocksDbWeight::get().writes(7 as u64))
 	}
 	fn redeem_multi(u: u32) -> Weight {
-		Weight::from_ref_time(86_888_000 as u64)
-			.saturating_add(Weight::from_ref_time(43_556_000 as u64).saturating_mul(u as u64))
+		Weight::from_parts(86_888_000 as u64, 0)
+			.saturating_add(Weight::from_parts(43_556_000 as u64, 0).saturating_mul(u as u64))
 			.saturating_add(RocksDbWeight::get().reads(4 as u64))
 			.saturating_add(RocksDbWeight::get().reads((3 as u64).saturating_mul(u as u64)))
 			.saturating_add(RocksDbWeight::get().writes(4 as u64))

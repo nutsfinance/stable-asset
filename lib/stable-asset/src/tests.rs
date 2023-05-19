@@ -1145,3 +1145,66 @@ fn modify_fees_successful() {
 		}
 	});
 }
+
+#[test]
+fn mint_failed_invalid_pool_balance() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		System::set_block_number(2);
+		match pool_tokens {
+			(coin0, _coin1, _pool_asset, swap_id) => {
+				assert_ok!(TestAssets::mint_into(coin0, &swap_id, 100_000_000));
+				assert_noop!(
+					StableAsset::mint(RuntimeOrigin::signed(1), 0, vec![10000000u128, 20000000u128], 0),
+					Error::<Test>::InvalidPoolBalance
+				);
+			}
+		}
+	});
+}
+
+#[test]
+fn swap_failed_invalid_pool_balance() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		System::set_block_number(2);
+		match pool_tokens {
+			(coin0, _coin1, _pool_asset, swap_id) => {
+				let amounts = vec![10000000u128, 20000000u128];
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
+				assert_ok!(TestAssets::mint_into(coin0, &swap_id, 100_000_000_000));
+				assert_noop!(
+					StableAsset::swap(RuntimeOrigin::signed(1), 0, 0, 1, 5000000u128, 0, 2),
+					Error::<Test>::InvalidPoolBalance
+				);
+			}
+		}
+	});
+}
+
+#[test]
+fn redeem_failed_invalid_pool_balance() {
+	new_test_ext().execute_with(|| {
+		let pool_tokens = create_pool();
+		System::set_block_number(2);
+		match pool_tokens {
+			(coin0, _coin1, _pool_asset, swap_id) => {
+				let amounts = vec![10000000u128, 20000000u128];
+				assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts, 0));
+				assert_ok!(TestAssets::mint_into(coin0, &swap_id, 100_000_000_000));
+				assert_noop!(
+					StableAsset::redeem_proportion(RuntimeOrigin::signed(1), 0, 0u128, vec![0u128, 0u128, 0u128]),
+					Error::<Test>::InvalidPoolBalance
+				);
+				assert_noop!(
+					StableAsset::redeem_multi(RuntimeOrigin::signed(1), 0, vec![0u128, 0u128], 0u128),
+					Error::<Test>::InvalidPoolBalance
+				);
+				assert_noop!(
+					StableAsset::redeem_single(RuntimeOrigin::signed(1), 0, 0u128, 0, 0u128, 2),
+					Error::<Test>::InvalidPoolBalance
+				);
+			}
+		}
+	});
+}

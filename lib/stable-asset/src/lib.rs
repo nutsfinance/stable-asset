@@ -177,6 +177,16 @@ pub mod traits {
 			>,
 		) -> DispatchResult;
 
+		fn check_pool_balances(
+			pool_info: &StableAssetPoolInfo<
+				Self::AssetId,
+				Self::AtLeast64BitUnsigned,
+				Self::Balance,
+				Self::AccountId,
+				Self::BlockNumber,
+			>,
+		) -> DispatchResult;
+
 		fn collect_yield(
 			pool_id: StableAssetPoolId,
 			pool_info: &mut StableAssetPoolInfo<
@@ -460,6 +470,7 @@ pub mod pallet {
 		SwapUnderMin,
 		RedeemUnderMin,
 		RedeemOverMax,
+		InvalidPoolBalance,
 	}
 
 	#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
@@ -1257,7 +1268,7 @@ impl<T: Config> Pallet<T> {
 			let pool_balance: T::AtLeast64BitUnsigned = balance_of
 				.checked_mul(&pool_info.precisions[i])
 				.ok_or(Error::<T>::Math)?;
-			ensure!(pool_balance == (*balance).into(), Error::<T>::Math);
+			ensure!(pool_balance == (*balance).into(), Error::<T>::InvalidPoolBalance);
 		}
 		Ok(())
 	}
@@ -1835,6 +1846,18 @@ impl<T: Config> StableAsset for Pallet<T> {
 		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 	) -> Option<StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>> {
 		Self::get_collect_yield_amount(pool_info).ok()
+	}
+
+	fn check_pool_balances(
+		pool_info: &StableAssetPoolInfo<
+			Self::AssetId,
+			Self::AtLeast64BitUnsigned,
+			Self::Balance,
+			Self::AccountId,
+			Self::BlockNumber,
+		>,
+	) -> DispatchResult {
+		Self::check_pool_balances(pool_info)
 	}
 
 	fn get_redeem_proportion_amount(

@@ -177,17 +177,6 @@ pub mod traits {
 			>,
 		) -> DispatchResult;
 
-		fn update_balance(
-			pool_id: StableAssetPoolId,
-			pool_info: &mut StableAssetPoolInfo<
-				Self::AssetId,
-				Self::AtLeast64BitUnsigned,
-				Self::Balance,
-				Self::AccountId,
-				Self::BlockNumber,
-			>,
-		) -> DispatchResult;
-
 		fn collect_yield(
 			pool_id: StableAssetPoolId,
 			pool_info: &mut StableAssetPoolInfo<
@@ -206,24 +195,6 @@ pub mod traits {
 		) -> DispatchResult;
 
 		fn get_collect_yield_amount(
-			pool_info: &StableAssetPoolInfo<
-				Self::AssetId,
-				Self::AtLeast64BitUnsigned,
-				Self::Balance,
-				Self::AccountId,
-				Self::BlockNumber,
-			>,
-		) -> Option<
-			StableAssetPoolInfo<
-				Self::AssetId,
-				Self::AtLeast64BitUnsigned,
-				Self::Balance,
-				Self::AccountId,
-				Self::BlockNumber,
-			>,
-		>;
-
-		fn get_balance_update_amount(
 			pool_info: &StableAssetPoolInfo<
 				Self::AssetId,
 				Self::AtLeast64BitUnsigned,
@@ -1276,24 +1247,19 @@ impl<T: Config> Pallet<T> {
 		Ok(cloned_stable_asset_info)
 	}
 
-	pub(crate) fn get_balance_update_amount(
+	pub(crate) fn check_pool_balances(
 		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
-	) -> Result<
-		StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
-		Error<T>,
-	> {
-		let mut updated_balances = pool_info.balances.clone();
-		for (i, balance) in updated_balances.iter_mut().enumerate() {
+	) -> DispatchResult {
+		let balances = pool_info.balances.clone();
+		for (i, balance) in balances.iter().enumerate() {
 			let balance_of: T::AtLeast64BitUnsigned =
 				T::Assets::balance(pool_info.assets[i], &pool_info.account_id).into();
-			*balance = balance_of
+			let pool_balance: T::AtLeast64BitUnsigned = balance_of
 				.checked_mul(&pool_info.precisions[i])
-				.ok_or(Error::<T>::Math)?
-				.into();
+				.ok_or(Error::<T>::Math)?;
+			ensure!(pool_balance == (*balance).into(), Error::<T>::Math);
 		}
-		let mut cloned_stable_asset_info = pool_info.clone();
-		cloned_stable_asset_info.balances = updated_balances;
-		Ok(cloned_stable_asset_info)
+		Ok(())
 	}
 }
 
@@ -1322,34 +1288,6 @@ impl<T: Config> StableAsset for Pallet<T> {
 		Pools::<T>::get(id)
 	}
 
-	/// Update the balance with underlying rebasing token balances
-	///
-	/// # Arguments
-	///
-	/// * `pool_id` - the ID of the pool
-	/// * `pool_info` - a mutable representation of the current pool state
-
-	fn update_balance(
-		pool_id: StableAssetPoolId,
-		pool_info: &mut StableAssetPoolInfo<
-			Self::AssetId,
-			Self::AtLeast64BitUnsigned,
-			Self::Balance,
-			Self::AccountId,
-			Self::BlockNumber,
-		>,
-	) -> DispatchResult {
-		let old_balances = pool_info.balances.clone();
-		let new_balances_pool_info = Self::get_balance_update_amount(pool_info)?;
-		pool_info.balances = new_balances_pool_info.balances;
-		Self::deposit_event(Event::BalanceUpdated {
-			pool_id,
-			old_balances,
-			new_balances: pool_info.balances.clone(),
-		});
-		Ok(())
-	}
-
 	/// Collect the yield from the underlying rebasing token balances
 	///
 	/// # Arguments
@@ -1369,7 +1307,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 	) -> DispatchResult {
 		let old_total_supply = pool_info.total_supply;
 		let old_d: T::AtLeast64BitUnsigned = old_total_supply.into();
-		Self::update_balance(pool_id, pool_info)?;
+		Self::check_pool_balances(pool_info)?;
 
 		let updated_total_supply_pool_info = Self::get_collect_yield_amount(pool_info)?;
 		let new_d: T::AtLeast64BitUnsigned = updated_total_supply_pool_info.total_supply.into();
@@ -1897,26 +1835,6 @@ impl<T: Config> StableAsset for Pallet<T> {
 		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>,
 	) -> Option<StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, T::BlockNumber>> {
 		Self::get_collect_yield_amount(pool_info).ok()
-	}
-
-	fn get_balance_update_amount(
-		pool_info: &StableAssetPoolInfo<
-			Self::AssetId,
-			Self::AtLeast64BitUnsigned,
-			Self::Balance,
-			Self::AccountId,
-			Self::BlockNumber,
-		>,
-	) -> Option<
-		StableAssetPoolInfo<
-			Self::AssetId,
-			Self::AtLeast64BitUnsigned,
-			Self::Balance,
-			Self::AccountId,
-			Self::BlockNumber,
-		>,
-	> {
-		Self::get_balance_update_amount(pool_info).ok()
 	}
 
 	fn get_redeem_proportion_amount(

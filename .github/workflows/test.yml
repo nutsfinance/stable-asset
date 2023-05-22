@@ -1,0 +1,44 @@
+name: Test
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - *
+jobs:
+  clean-up-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel Previous Runs
+        # Only cancel non-master branch runs
+        if: ${{ github.ref != 'refs/heads/master' }}
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+  build:
+    runs-on: ubuntu-latest
+    needs: clean-up-actions
+    defaults:
+      run:
+        working-directory: lib/stable-asset
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly-2023-03-04
+          components: rustfmt
+          target: wasm32-unknown-unknown
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+      - name: Check format
+        run: cargo fmt --all -- --check
+      - name: Install clippy
+        run: rustup component add clippy
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+      - name: Run test
+        run: cargo test

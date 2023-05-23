@@ -1400,7 +1400,7 @@ fn swap_should_work_with_unbalance_coin1() {
 		let amounts = vec![10000000u128, 10000000u128];
 		assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts.clone(), 0));
 
-		// increase the balance of coin0
+		// increase the balance of coin1
 		assert_ok!(TestAssets::mint_into(coin1, &swap_id, 100_000_000_000));
 
 		assert_ok!(StableAsset::mint(RuntimeOrigin::signed(1), 0, amounts.clone(), 0));

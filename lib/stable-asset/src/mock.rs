@@ -20,8 +20,8 @@ use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
 	traits::{
-		fungibles::{Inspect, Mutate, Transfer},
-		tokens::{DepositConsequence, WithdrawConsequence},
+		fungibles::{Inspect, Mutate, Unbalanced, Dust},
+		tokens::{DepositConsequence, Fortitude, Precision, Preservation, Provenance, WithdrawConsequence},
 		ConstU128, ConstU16, ConstU32, ConstU64, Currency, EnsureOrigin, Everything, OnUnbalanced,
 	},
 	PalletId,
@@ -87,6 +87,10 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = ();
+	type HoldIdentifier = ();
+	type FreezeIdentifier = ();
+	type MaxHolds = ();
+	type MaxFreezes = ();
 }
 
 pub type Balance = u128;
@@ -127,7 +131,7 @@ impl CreateAssets<AssetId> for TestAssets {
 }
 
 impl Mutate<AccountId> for TestAssets {
-	fn mint_into(asset: AssetId, dest: &AccountId, amount: Balance) -> DispatchResult {
+	fn mint_into(asset: AssetId, dest: &AccountId, amount: Balance) -> Result<Balance, DispatchError> {
 		ASSETS.with(|d| -> DispatchResult {
 			let i = usize::try_from(asset).map_err(|_| DispatchError::Other("Index out of range"))?;
 			let mut d = d.borrow_mut();
@@ -142,10 +146,11 @@ impl Mutate<AccountId> for TestAssets {
 			a.total = a.total.checked_add(amount).ok_or(DispatchError::Other("Overflow"))?;
 
 			Ok(())
-		})
+		})?;
+		Ok(amount)
 	}
 
-	fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance) -> Result<Balance, DispatchError> {
+	fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance, _precision: Precision, _fortitude: Fortitude) -> Result<Balance, DispatchError> {
 		ASSETS.with(|d| -> DispatchResult {
 			let i = usize::try_from(asset).map_err(|_| DispatchError::Other("Index out of range"))?;
 			let mut d = d.borrow_mut();
@@ -159,6 +164,18 @@ impl Mutate<AccountId> for TestAssets {
 
 			Ok(())
 		})?;
+		Ok(amount)
+	}
+
+	fn transfer(
+		asset: AssetId,
+		source: &AccountId,
+		dest: &AccountId,
+		amount: Balance,
+		_preservation: Preservation,
+	) -> Result<Balance, DispatchError> {
+		Self::burn_from(asset, source, amount, Precision::Exact, Fortitude::Polite)?;
+		Self::mint_into(asset, dest, amount)?;
 		Ok(amount)
 	}
 }
@@ -186,11 +203,20 @@ impl Inspect<AccountId> for TestAssets {
 		todo!()
 	}
 
-	fn reducible_balance(_asset: AssetId, _who: &AccountId, _keep_alive: bool) -> Balance {
+	fn total_balance(_asset: AssetId, _who: &AccountId) -> Balance {
 		todo!()
 	}
 
-	fn can_deposit(_asset: Self::AssetId, _who: &AccountId, _amount: Balance, _mint: bool) -> DepositConsequence {
+	fn reducible_balance(_asset: AssetId, _who: &AccountId, _preservation: Preservation, _force: Fortitude) -> Balance {
+		todo!()
+	}
+
+	fn can_deposit(
+		_asset: Self::AssetId,
+		_who: &AccountId,
+		_amount: Balance,
+		_provenance: Provenance,
+	) -> DepositConsequence {
 		todo!()
 	}
 
@@ -203,17 +229,21 @@ impl Inspect<AccountId> for TestAssets {
 	}
 }
 
-impl Transfer<AccountId> for TestAssets {
-	fn transfer(
-		asset: AssetId,
-		source: &AccountId,
-		dest: &AccountId,
-		amount: Balance,
-		_keep_alive: bool,
-	) -> Result<Balance, DispatchError> {
-		Self::burn_from(asset, source, amount)?;
-		Self::mint_into(asset, dest, amount)?;
-		Ok(amount)
+impl Unbalanced<AccountId> for TestAssets {
+	fn handle_dust(_dust: Dust<AccountId, Self>) {
+		todo!()
+	}
+
+	fn write_balance(
+		_asset: AssetId,
+		_who: &AccountId,
+		_amount: Balance,
+	) -> Result<Option<Balance>, DispatchError> {
+		todo!()
+	}
+
+	fn set_total_issuance(_asset: AssetId, _amount: Balance) {
+		todo!()
 	}
 }
 

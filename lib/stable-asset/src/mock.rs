@@ -20,7 +20,7 @@ use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	parameter_types,
 	traits::{
-		fungibles::{Inspect, Mutate, Unbalanced, Dust},
+		fungibles::{Dust, Inspect, Mutate, Unbalanced},
 		tokens::{DepositConsequence, Fortitude, Precision, Preservation, Provenance, WithdrawConsequence},
 		ConstU128, ConstU16, ConstU32, ConstU64, Currency, EnsureOrigin, Everything, OnUnbalanced,
 	},
@@ -150,7 +150,13 @@ impl Mutate<AccountId> for TestAssets {
 		Ok(amount)
 	}
 
-	fn burn_from(asset: AssetId, dest: &AccountId, amount: Balance, _precision: Precision, _fortitude: Fortitude) -> Result<Balance, DispatchError> {
+	fn burn_from(
+		asset: AssetId,
+		dest: &AccountId,
+		amount: Balance,
+		_precision: Precision,
+		_fortitude: Fortitude,
+	) -> Result<Balance, DispatchError> {
 		ASSETS.with(|d| -> DispatchResult {
 			let i = usize::try_from(asset).map_err(|_| DispatchError::Other("Index out of range"))?;
 			let mut d = d.borrow_mut();
@@ -234,11 +240,7 @@ impl Unbalanced<AccountId> for TestAssets {
 		todo!()
 	}
 
-	fn write_balance(
-		_asset: AssetId,
-		_who: &AccountId,
-		_amount: Balance,
-	) -> Result<Option<Balance>, DispatchError> {
+	fn write_balance(_asset: AssetId, _who: &AccountId, _amount: Balance) -> Result<Option<Balance>, DispatchError> {
 		todo!()
 	}
 

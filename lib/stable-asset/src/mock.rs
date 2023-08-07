@@ -29,18 +29,17 @@ use frame_support::{
 use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::{
-	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
+	BuildStorage,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 frame_support::construct_runtime!(
 	pub enum Test {
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		StableAsset: stable_asset::{Pallet, Call, Storage, Event<T>},
+		System: frame_system,
+		Balances: pallet_balances,
+		StableAsset: stable_asset,
 	}
 );
 
@@ -298,8 +297,8 @@ impl stable_asset::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	frame_system::GenesisConfig::<Runtime>::default()
-		.build_storage::<Test>()
+	frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
 		.unwrap()
 		.into()
 }

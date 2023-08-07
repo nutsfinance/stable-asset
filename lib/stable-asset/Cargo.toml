@@ -54,7 +54,6 @@ git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v1.0.0"
 
 [dev-dependencies.pallet-balances]
-default-features = false
 git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v1.0.0"
 

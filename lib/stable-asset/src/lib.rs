@@ -868,7 +868,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_mint_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 		amounts_bal: &[T::Balance],
 	) -> Result<MintResult<T>, Error<T>> {
 		// update pool balances and total supply to avoid stale data
@@ -932,7 +938,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_swap_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 		input_index: PoolTokenIndex,
 		output_index: PoolTokenIndex,
 		dx_bal: T::Balance,
@@ -1002,7 +1014,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_swap_amount_exact(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 		input_index: PoolTokenIndex,
 		output_index: PoolTokenIndex,
 		dy_bal: T::Balance,
@@ -1063,7 +1081,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_redeem_proportion_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 		amount_bal: T::Balance,
 	) -> Result<RedeemProportionResult<T::Balance>, Error<T>> {
 		// update pool balances and total supply to avoid stale data
@@ -1117,7 +1141,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_redeem_single_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 		amount_bal: T::Balance,
 		i: PoolTokenIndex,
 	) -> Result<RedeemSingleResult<T>, Error<T>> {
@@ -1182,7 +1212,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_redeem_multi_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 		amounts: &[T::Balance],
 	) -> Result<RedeemMultiResult<T>, Error<T>> {
 		// update pool balances and total supply to avoid stale data
@@ -1243,7 +1279,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_pending_fee_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 	) -> Result<PendingFeeResult<T>, Error<T>> {
 		let mut balances: Vec<T::AtLeast64BitUnsigned> =
 			Self::convert_vec_balance_to_number(pool_info.balances.clone());
@@ -1286,7 +1328,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_collect_yield_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 	) -> Result<
 		StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
 		Error<T>,
@@ -1306,7 +1354,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn get_balance_update_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 	) -> Result<
 		StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
 		Error<T>,
@@ -1995,7 +2049,13 @@ impl<T: Config> StableAsset for Pallet<T> {
 	}
 
 	fn get_collect_yield_amount(
-		pool_info: &StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>,
+		pool_info: &StableAssetPoolInfo<
+			T::AssetId,
+			T::AtLeast64BitUnsigned,
+			T::Balance,
+			T::AccountId,
+			BlockNumberFor<T>,
+		>,
 	) -> Option<StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>> {
 		Self::get_collect_yield_amount(pool_info).ok()
 	}

@@ -52,7 +52,7 @@ pub enum Error<T> {
 ```
 pub enum Event<T: Config> {
       CreatePool{
-			pool_id: StableAssetPoolId, 
+			pool_id: StableAssetPoolId,
 			swap_id: T::AccountId,
 			pallet_id: T::AccountId,
 		},
@@ -75,7 +75,7 @@ pub enum Event<T: Config> {
 			redeemer: T::AccountId,
 			pool_id: StableAssetPoolId,
 			amount: T::Balance,
-			input_amount: Vec<T::Balance>, 
+			input_amount: Vec<T::Balance>,
 			fee: T::Balance,
 		},
 		FeeCollected{
@@ -84,9 +84,9 @@ pub enum Event<T: Config> {
 			amount: T::Balance,
 		},
 		AModified{
-			pool_id: StableAssetPoolId, 
+			pool_id: StableAssetPoolId,
 			value: T::AtLeast64BitUnsigned,
-			time: T::BlockNumber,
+			time: BlockNumberFor<T>,
 		},
   }
 ```

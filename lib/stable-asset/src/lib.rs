@@ -306,7 +306,7 @@ pub mod pallet {
 		dispatch::{Codec, DispatchResult},
 		pallet_prelude::*,
 		traits::EnsureOrigin,
-		transactional, PalletId,
+		PalletId,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{

@@ -552,7 +552,6 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
 		#[pallet::weight(T::WeightInfo::create_pool())]
-		#[transactional]
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			pool_asset: T::AssetId,
@@ -584,7 +583,6 @@ pub mod pallet {
 
 		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::mint(amounts.len() as u32))]
-		#[transactional]
 		pub fn mint(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -597,7 +595,6 @@ pub mod pallet {
 
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::swap(*asset_length))]
-		#[transactional]
 		pub fn swap(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -614,7 +611,6 @@ pub mod pallet {
 
 		#[pallet::call_index(3)]
 		#[pallet::weight(T::WeightInfo::redeem_proportion(min_redeem_amounts.len() as u32))]
-		#[transactional]
 		pub fn redeem_proportion(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -627,7 +623,6 @@ pub mod pallet {
 
 		#[pallet::call_index(4)]
 		#[pallet::weight(T::WeightInfo::redeem_single(*asset_length))]
-		#[transactional]
 		pub fn redeem_single(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -643,7 +638,6 @@ pub mod pallet {
 
 		#[pallet::call_index(5)]
 		#[pallet::weight(T::WeightInfo::redeem_multi(amounts.len() as u32))]
-		#[transactional]
 		pub fn redeem_multi(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -656,7 +650,6 @@ pub mod pallet {
 
 		#[pallet::call_index(6)]
 		#[pallet::weight(T::WeightInfo::modify_a())]
-		#[transactional]
 		pub fn modify_a(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -669,7 +662,6 @@ pub mod pallet {
 
 		#[pallet::call_index(7)]
 		#[pallet::weight(T::WeightInfo::modify_fees())]
-		#[transactional]
 		pub fn modify_fees(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,
@@ -701,7 +693,6 @@ pub mod pallet {
 
 		#[pallet::call_index(8)]
 		#[pallet::weight(T::WeightInfo::modify_recipients())]
-		#[transactional]
 		pub fn modify_recipients(
 			origin: OriginFor<T>,
 			pool_id: StableAssetPoolId,

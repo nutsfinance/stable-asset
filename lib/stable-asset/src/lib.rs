@@ -303,12 +303,7 @@ pub mod pallet {
 	use crate::WeightInfo;
 	use codec::Codec;
 	use frame_support::traits::tokens::fungibles;
-	use frame_support::{
-		dispatch::DispatchResult,
-		pallet_prelude::*,
-		traits::EnsureOrigin,
-		PalletId,
-	};
+	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::EnsureOrigin, PalletId};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{
 		traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero},

@@ -17,7 +17,7 @@
 
 use crate as stable_asset;
 use frame_support::{
-	dispatch::{DispatchError, DispatchResult},
+	dispatch::DispatchResult,
 	parameter_types,
 	traits::{
 		fungibles::{Dust, Inspect, Mutate, Unbalanced},
@@ -30,7 +30,7 @@ use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
-	BuildStorage,
+	BuildStorage, DispatchError,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;

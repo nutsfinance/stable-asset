@@ -32,9 +32,9 @@ mod tests;
 pub mod weights;
 
 use crate::traits::StableAsset;
+use codec::{Decode, Encode};
 use frame_support::{
-	codec::{Decode, Encode},
-	dispatch::{DispatchError, DispatchResult},
+	dispatch::DispatchResult,
 	ensure,
 	traits::{
 		fungibles::{Inspect, Mutate},
@@ -48,7 +48,7 @@ use scale_info::TypeInfo;
 use sp_core::U512;
 use sp_runtime::{
 	traits::{AccountIdConversion, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero},
-	SaturatedConversion,
+	DispatchError, SaturatedConversion,
 };
 use sp_std::prelude::*;
 
@@ -301,9 +301,10 @@ pub mod pallet {
 	use super::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
 	use crate::traits::{StableAsset, ValidateAssetId};
 	use crate::WeightInfo;
+	use codec::Codec;
 	use frame_support::traits::tokens::fungibles;
 	use frame_support::{
-		dispatch::{Codec, DispatchResult},
+		dispatch::DispatchResult,
 		pallet_prelude::*,
 		traits::EnsureOrigin,
 		PalletId,

@@ -19,9 +19,8 @@ use crate::{
 	mock::*, Error, MintResult, RedeemMultiResult, RedeemProportionResult, RedeemSingleResult, StableAssetPoolInfo,
 	SwapResult,
 };
-use frame_support::assert_noop;
-use frame_support::assert_ok;
-use frame_support::dispatch::DispatchError;
+use frame_support::{assert_noop, assert_ok};
+use sp_runtime::DispatchError;
 use frame_support::traits::fungibles::{Inspect, Mutate};
 
 pub const BALANCE_OFF: u128 = 1;

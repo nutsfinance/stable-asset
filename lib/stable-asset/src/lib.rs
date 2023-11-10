@@ -32,7 +32,7 @@ mod tests;
 pub mod weights;
 
 use crate::traits::StableAsset;
-use codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode};
 use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
@@ -301,7 +301,7 @@ pub mod pallet {
 	use super::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
 	use crate::traits::{StableAsset, ValidateAssetId};
 	use crate::WeightInfo;
-	use codec::Codec;
+	use parity_scale_codec::Codec;
 	use frame_support::traits::tokens::fungibles;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::EnsureOrigin, PalletId};
 	use frame_system::pallet_prelude::*;

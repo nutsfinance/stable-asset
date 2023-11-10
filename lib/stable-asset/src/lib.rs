@@ -32,7 +32,6 @@ mod tests;
 pub mod weights;
 
 use crate::traits::StableAsset;
-use codec::{Decode, Encode};
 use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
@@ -44,6 +43,7 @@ use frame_support::{
 	weights::Weight,
 };
 use frame_system::pallet_prelude::*;
+use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::U512;
 use sp_runtime::{
@@ -301,10 +301,10 @@ pub mod pallet {
 	use super::{PoolTokenIndex, StableAssetPoolId, StableAssetPoolInfo};
 	use crate::traits::{StableAsset, ValidateAssetId};
 	use crate::WeightInfo;
-	use codec::Codec;
 	use frame_support::traits::tokens::fungibles;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::EnsureOrigin, PalletId};
 	use frame_system::pallet_prelude::*;
+	use parity_scale_codec::Codec;
 	use sp_runtime::{
 		traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Zero},
 		FixedPointOperand,

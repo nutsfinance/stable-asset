@@ -17,8 +17,9 @@
 
 use crate as stable_asset;
 use frame_support::{
+	derive_impl,
 	dispatch::DispatchResult,
-	parameter_types, derive_impl,
+	parameter_types,
 	traits::{
 		fungibles::{Dust, Inspect, Mutate, Unbalanced},
 		tokens::{DepositConsequence, Fortitude, Precision, Preservation, Provenance, WithdrawConsequence},

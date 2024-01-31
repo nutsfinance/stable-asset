@@ -23,16 +23,12 @@ use frame_support::{
 	traits::{
 		fungibles::{Dust, Inspect, Mutate, Unbalanced},
 		tokens::{DepositConsequence, Fortitude, Precision, Preservation, Provenance, WithdrawConsequence},
-		ConstU128, ConstU16, ConstU32, ConstU64, Currency, EnsureOrigin, Everything, OnUnbalanced,
+		ConstU128, ConstU32, Currency, EnsureOrigin, OnUnbalanced,
 	},
 	PalletId,
 };
 use frame_system::RawOrigin;
-use sp_core::H256;
-use sp_runtime::{
-	traits::{BlakeTwo256, IdentityLookup},
-	BuildStorage, DispatchError,
-};
+use sp_runtime::{traits::IdentityLookup, BuildStorage, DispatchError};
 
 type Block = frame_system::mocking::MockBlock<Test>;
 

@@ -29,7 +29,7 @@ jobs:
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2024-01-15
+          toolchain: nightly-2024-07-14
           components: rustfmt
           target: wasm32-unknown-unknown
       - name: Setup cmake

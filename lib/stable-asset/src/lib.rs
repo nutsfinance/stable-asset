@@ -2047,7 +2047,8 @@ impl<T: Config> StableAsset for Pallet<T> {
 			T::AccountId,
 			BlockNumberFor<T>,
 		>,
-	) -> Option<StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>> {
+	) -> Option<StableAssetPoolInfo<T::AssetId, T::AtLeast64BitUnsigned, T::Balance, T::AccountId, BlockNumberFor<T>>>
+	{
 		Self::get_collect_yield_amount(pool_info).ok()
 	}
 

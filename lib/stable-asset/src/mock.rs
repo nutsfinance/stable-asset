@@ -127,6 +127,7 @@ impl Mutate<AccountId> for TestAssets {
 		asset: AssetId,
 		dest: &AccountId,
 		amount: Balance,
+		_preservation: Preservation,
 		_precision: Precision,
 		_fortitude: Fortitude,
 	) -> Result<Balance, DispatchError> {
@@ -153,7 +154,7 @@ impl Mutate<AccountId> for TestAssets {
 		amount: Balance,
 		_preservation: Preservation,
 	) -> Result<Balance, DispatchError> {
-		Self::burn_from(asset, source, amount, Precision::Exact, Fortitude::Polite)?;
+		Self::burn_from(asset, source, amount, Preservation::Expendable, Precision::Exact, Fortitude::Polite)?;
 		Self::mint_into(asset, dest, amount)?;
 		Ok(amount)
 	}

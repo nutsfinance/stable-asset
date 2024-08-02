@@ -1798,6 +1798,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				pool_info.pool_asset,
 				who,
 				redeem_amount,
+				Preservation::Expendable,
 				Precision::Exact,
 				Fortitude::Polite,
 			)?;
@@ -1883,6 +1884,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 					pool_info.pool_asset,
 					who,
 					redeem_amount,
+					Preservation::Expendable,
 					Precision::Exact,
 					Fortitude::Polite,
 				)?;
@@ -1973,6 +1975,7 @@ impl<T: Config> StableAsset for Pallet<T> {
 				pool_info.pool_asset,
 				who,
 				burn_amount,
+				Preservation::Expendable,
 				Precision::Exact,
 				Fortitude::Polite,
 			)?;

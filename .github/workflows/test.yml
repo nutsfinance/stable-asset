@@ -27,6 +27,8 @@ jobs:
           target: wasm32-unknown-unknown
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.13
+      - name: Add workaround # https://substrate.stackexchange.com/questions/12242
+        run: cargo update -p frame-support-procedural --precise 30.0.5
       - name: Check format
         run: cargo fmt --all -- --check
       - name: Install clippy

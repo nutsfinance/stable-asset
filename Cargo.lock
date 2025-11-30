@@ -1985,6 +1985,7 @@ dependencies = [
 name = "nutsfinance-stable-asset"
 version = "0.1.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",

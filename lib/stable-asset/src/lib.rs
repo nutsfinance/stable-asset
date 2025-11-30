@@ -29,6 +29,11 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::BenchmarkHelper;
 pub mod weights;
 
 use crate::traits::StableAsset;
@@ -348,6 +353,9 @@ pub mod pallet {
 
 		/// The origin which may create pool or modify pool.
 		type ListingOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: super::BenchmarkHelper<Self::AssetId, Self::AtLeast64BitUnsigned>;
 	}
 
 	#[pallet::pallet]
@@ -559,7 +567,7 @@ pub mod pallet {
 			yield_recipient: T::AccountId,
 			precision: T::AtLeast64BitUnsigned,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin.clone())?;
+			T::ListingOrigin::ensure_origin_or_root(origin.clone())?;
 			ensure!(T::EnsurePoolAssetId::validate(pool_asset), Error::<T>::InvalidPoolAsset);
 			<Self as StableAsset>::create_pool(
 				pool_asset,
@@ -650,7 +658,7 @@ pub mod pallet {
 			a: T::AtLeast64BitUnsigned,
 			future_a_block: BlockNumberFor<T>,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin)?;
+			T::ListingOrigin::ensure_origin_or_root(origin)?;
 			<Self as StableAsset>::modify_a(pool_id, a, future_a_block)
 		}
 
@@ -663,7 +671,7 @@ pub mod pallet {
 			swap_fee: Option<T::AtLeast64BitUnsigned>,
 			redeem_fee: Option<T::AtLeast64BitUnsigned>,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin)?;
+			T::ListingOrigin::ensure_origin_or_root(origin)?;
 			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 				if let Some(fee) = mint_fee {
@@ -693,7 +701,7 @@ pub mod pallet {
 			fee_recipient: Option<T::AccountId>,
 			yield_recipient: Option<T::AccountId>,
 		) -> DispatchResult {
-			T::ListingOrigin::ensure_origin(origin)?;
+			T::ListingOrigin::ensure_origin_or_root(origin)?;
 			Pools::<T>::try_mutate_exists(pool_id, |maybe_pool_info| -> DispatchResult {
 				let pool_info = maybe_pool_info.as_mut().ok_or(Error::<T>::PoolNotFound)?;
 				if let Some(recipient) = fee_recipient {

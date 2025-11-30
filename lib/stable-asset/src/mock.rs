@@ -260,6 +260,51 @@ parameter_types! {
 	pub const StableAssetPalletId: PalletId = PalletId(*b"nuts/sta");
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+pub struct MockBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl crate::BenchmarkHelper<AssetId, u128> for MockBenchmarkHelper {
+	fn setup_assets_and_pool_asset(u: u32) -> Option<(Vec<AssetId>, Vec<u128>, AssetId)> {
+		let mut assets = vec![];
+		let mut precisions = vec![];
+		for _i in 0..u {
+			let coin = TestAssets::create_asset().expect("asset should be created");
+			assets.push(coin);
+			precisions.push(1u128);
+		}
+
+		let pool_asset = TestAssets::create_asset().expect("asset should be created");
+
+		Some((assets, precisions, pool_asset))
+	}
+	fn setup_create_stable_pool(
+		assets: Vec<AssetId>,
+		precisions: Vec<u128>,
+		pool_asset: AssetId,
+	) -> Option<crate::StableAssetPoolId> {
+		let amount: Balance = 100_000_000;
+
+		assets.iter().for_each(|asset| {
+			frame_support::assert_ok!(TestAssets::mint_into(*asset, &1, amount));
+		});
+
+		frame_support::assert_ok!(StableAsset::create_pool(
+			RuntimeOrigin::signed(1),
+			pool_asset,
+			assets,
+			precisions,
+			10000000u128,
+			20000000u128,
+			50000000u128,
+			10000u128,
+			2,
+			1,
+			1000000000000000000u128,
+		));
+		Some(0u32)
+	}
+}
+
 impl stable_asset::Config for Test {
 	type AssetId = i64;
 	type Balance = Balance;
@@ -274,6 +319,8 @@ impl stable_asset::Config for Test {
 	type WeightInfo = ();
 	type ListingOrigin = EnsureStableAsset;
 	type EnsurePoolAssetId = EnsurePoolAssetId;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = MockBenchmarkHelper;
 }
 
 // Build genesis storage according to the mock runtime.

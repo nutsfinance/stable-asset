@@ -35,3 +35,5 @@ jobs:
         run: cargo clippy -- -D warnings
       - name: Run test
         run: cargo test
+      - name: Run benchmarks test
+        run: cargo test --features runtime-benchmarks

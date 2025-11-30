@@ -13,6 +13,7 @@ parity-scale-codec = { version = "3.6.5", default-features = false, features = [
 scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
 serde = { version = "1.0.101", default-features = false }
 
+frame-benchmarking = { version = "41.0.0", default-features = false }
 frame-support = { version = "41.0.0", default-features = false }
 frame-system = { version = "41.0.0", default-features = false }
 sp-core = { version = "37.0.0", default-features = false }
